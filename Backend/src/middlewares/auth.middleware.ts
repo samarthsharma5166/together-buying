@@ -58,3 +58,12 @@ export const isAuthenticated = tryCatch(async (req: AuthenticatedRequest, res: R
 
 
 
+const authorizedRoles=(...roles:Array<"USER" | "BUYER_PREMIUM" | "RM" | "ADMIN" |"SUPER_ADMIN">)=>async(req:AuthenticatedRequest,res:Response,next:NextFunction)=>{
+  const currentUserRoles = req.user?.role as "USER" | "BUYER_PREMIUM" | "RM" | "ADMIN" |"SUPER_ADMIN";
+  if(!currentUserRoles || !roles.includes(currentUserRoles)){
+    return next(
+     new AppError("you do not have permission to access this routes",403)
+    )
+  }
+  next();
+}
