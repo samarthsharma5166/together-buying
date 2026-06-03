@@ -58,9 +58,9 @@ export const propertyBaseObject = z.object({
     .union([z.number(), z.string()])
     .transform((val) => BigInt(val))
     .refine((val) => val >= 0n, "Maximum price must be non-negative"),
-  totalUnits: z.number().int().nonnegative().optional().nullable(),
-  isFeatured: z.boolean().optional().default(false),
-  isPreLaunch: z.boolean().optional().default(false),
+  totalUnits: z.coerce.number().int().nonnegative().optional().nullable(),
+  isFeatured: z.coerce.boolean().optional().default(false),
+  isPreLaunch: z.coerce.boolean().optional().default(false),
   metaTitle: z.string().optional().nullable(),
   metaDescription: z.string().optional().nullable(),
   images: z.array(propertyImageSchema).optional().default([]),
@@ -85,3 +85,11 @@ export const updatePropertySchema = propertyBaseObject.partial().refine((data) =
 });
 
 export const updateUnitSchema = propertyUnitSchema.partial();
+
+export const toggleFeaturedSchema = z.object({
+  isFeatured: z.boolean(),
+});
+
+export const updatePossessionStatusSchema = z.object({
+  possessionStatus: z.nativeEnum(PossessionStatus),
+});

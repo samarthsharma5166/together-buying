@@ -49,3 +49,6 @@ export const uploadDeveloperFiles = upload.fields([
   { name: "logo", maxCount: 10 },
   { name: "bannerImage", maxCount: 10 },
 ]);
+
+// Middleware specifically for uploading multiple property images
+export const uploadPropertyImages = upload.array("images", 10);

@@ -3,9 +3,24 @@ import { prisma } from "../db/db.js";
 import AppError from "../utils/error.utils.js";
 import { tryCatch } from "../utils/tryCatch.js";
 import type { AuthenticatedRequest } from "../middlewares/auth.middleware.js";
-import { createPropertySchema, updatePropertySchema } from "../schemas/property.schemas.js";
+import { createPropertySchema, updatePropertySchema, toggleFeaturedSchema, updatePossessionStatusSchema } from "../schemas/property.schemas.js";
 import { PropertyStatus } from "@prisma/client";
 import { serializeBigInt, removeUndefined } from "../utils/serialize.js";
+import fs from "fs";
+import path from "path";
+
+// Helper to delete physical files from the uploads directory safely
+const deleteFileSafe = (filename: string | null | undefined) => {
+  if (!filename) return;
+  const filePath = path.join("uploads", filename);
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (err) {
+    console.error(`Failed to delete file from disk: ${filePath}`, err);
+  }
+};
 
 // Helper to generate a slug
 const generateSlug = (text: string): string => {
@@ -318,19 +333,189 @@ export const deleteProperty = tryCatch(async (req: AuthenticatedRequest, res: Re
   const property = await prisma.property.findUnique({
     where: { id },
   });
+
   if (!property) {
     throw new AppError("Property listing not found", 404);
   }
 
-  await prisma.property.update({
+  const result = await prisma.property.update({
     where: { id },
     data: {
       status: PropertyStatus.ARCHIVED,
     },
   });
-
+  
   return res.status(200).json({
     success: true,
     message: "Property listing archived successfully",
+  });
+});
+
+/**
+ * @desc Upload property images for an existing property
+ * @route POST /api/properties/:propertyId/images
+ * @access Admin/Super Admin
+ */
+export const uploadPropertyImages = tryCatch(async (req: AuthenticatedRequest, res: Response) => {
+  const { propertyId } = req.params as { propertyId: string };
+
+  // Verify property exists
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+  });
+  if (!property) {
+    throw new AppError("Property listing not found", 404);
+  }
+
+  const files = req.files as Express.Multer.File[] | undefined;
+  if (!files || files.length === 0) {
+    throw new AppError("No files uploaded", 400);
+  }
+
+  // Optional metadata from body
+  const caption = typeof req.body.caption === "string" ? req.body.caption : null;
+  const imageType = typeof req.body.imageType === "string" ? req.body.imageType as any : "EXTERIOR";
+
+  try {
+    const createdImages = await prisma.$transaction(
+      files.map((file, idx) =>
+        prisma.propertyImage.create({
+          data: {
+            propertyId,
+            imageUrl: file.filename,
+            caption,
+            imageType,
+            sortOrder: idx,
+          },
+        })
+      )
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Property images uploaded successfully",
+      data: serializeBigInt(createdImages),
+    });
+  } catch (error) {
+    // Delete files if database create transaction failed
+    files.forEach((file) => deleteFileSafe(file.filename));
+    throw error;
+  }
+});
+
+/**
+ * @desc Delete a property image from DB and disk
+ * @route DELETE /api/properties/images/:imageId
+ * @access Admin/Super Admin
+ */
+export const deletePropertyImage = tryCatch(async (req: AuthenticatedRequest, res: Response) => {
+  const { imageId } = req.params as { imageId: string };
+
+  const image = await prisma.propertyImage.findUnique({
+    where: { id: imageId },
+  });
+  if (!image) {
+    throw new AppError("Property image not found", 404);
+  }
+
+  // Delete DB record
+  await prisma.propertyImage.delete({
+    where: { id: imageId },
+  });
+
+  // Delete physical file
+  deleteFileSafe(image.imageUrl);
+
+  return res.status(200).json({
+    success: true,
+    message: "Property image deleted successfully",
+  });
+});
+
+/**
+ * @desc Get all active featured properties
+ * @route GET /api/properties/featured
+ * @access Public
+ */
+export const getFeaturedProperties = tryCatch(async (req: AuthenticatedRequest, res: Response) => {
+  const properties = await prisma.property.findMany({
+    where: {
+      status: PropertyStatus.ACTIVE,
+      isFeatured: true,
+    },
+    orderBy: { createdAt: "desc" },
+    include: {
+      developer: {
+        select: { 
+          companyName: true,
+          logoUrl: true,
+        },
+      },
+      images: {
+        take: 1,
+        orderBy: { sortOrder: "asc" },
+      },
+    },
+  });
+
+  return res.status(200).json({
+    success: true,
+    data: serializeBigInt(properties),
+  });
+});
+
+/**
+ * @desc Toggle featured flag for property
+ * @route PATCH /api/properties/:id/featured
+ * @access Admin/Super Admin
+ */
+export const toggleFeatured = tryCatch(async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params as { id: string };
+  const { isFeatured } = toggleFeaturedSchema.parse(req.body);
+
+  const property = await prisma.property.findUnique({
+    where: { id },
+  });
+  if (!property) {
+    throw new AppError("Property listing not found", 404);
+  }
+
+  const updatedProperty = await prisma.property.update({
+    where: { id },
+    data: { isFeatured },
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: `Property marked as ${isFeatured ? "featured" : "standard"} successfully`,
+    data: serializeBigInt(updatedProperty),
+  });
+});
+
+/**
+ * @desc Update property possession status
+ * @route PATCH /api/properties/:id/possession-status
+ * @access Admin/Super Admin
+ */
+export const updatePossessionStatus = tryCatch(async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params as { id: string };
+  const { possessionStatus } = updatePossessionStatusSchema.parse(req.body);
+
+  const property = await prisma.property.findUnique({
+    where: { id },
+  });
+  if (!property) {
+    throw new AppError("Property listing not found", 404);
+  }
+
+  const updatedProperty = await prisma.property.update({
+    where: { id },
+    data: { possessionStatus },
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "Property possession status updated successfully",
+    data: serializeBigInt(updatedProperty),
   });
 });
