@@ -6,14 +6,20 @@ type ErrorType = {
   stack: string;
 }
 
-const errorMiddleware = (error:ErrorType,req:Request,res:Response,next:NextFunction)=>{
-  error.statusCode = error.statusCode || 500;
-  error.message = error.message || 'something went wrong'
-  return res.status(error.statusCode).json({
-    success:false,
-    message:error.message,
-    stack:error.stack
-  })
+const errorMiddleware = (error: any, req: Request, res: Response, next: NextFunction) => {
+  let statusCode = error.statusCode || 500;
+  let message = error.message || 'something went wrong';
+
+  if (error.code === 'LIMIT_UNEXPECTED_FILE') {
+    message = `Unexpected file field: "${error.field}". Please verify that this field name matches the accepted API parameters.`;
+    statusCode = 400;
+  }
+
+  return res.status(statusCode).json({
+    success: false,
+    message: message,
+    stack: error.stack
+  });
 }
 
 export default errorMiddleware;

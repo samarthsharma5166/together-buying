@@ -102,15 +102,16 @@ model User {
 
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at") 
+  createdProperties Property[] @relation("CreatedProperties")
 
   @@map("users")
 }
 
 model Property {
-  id                  String @id @default(uuid()) @db.Uuid
+  id                  String @id @default(uuid())
 
-  developerId         String @db.Uuid
-  createdById         String @db.Uuid
+  developerId         String
+  createdById         String
 
   title               String @db.VarChar(255)
   slug                String @unique @db.VarChar(255)
@@ -144,10 +145,10 @@ model Property {
   metaTitle           String? @db.VarChar(255)
   metaDescription     String? @db.Text
 
-  createdAt           DateTime @default(now()) @db.Timestamptz
-  updatedAt           DateTime @updatedAt @db.Timestamptz
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  developer           User @relation("DeveloperProperties", fields: [developerId], references: [id])
+  developer           Developer @relation("DeveloperProperties", fields: [developerId], references: [id])
   createdBy           User @relation("CreatedProperties", fields: [createdById], references: [id])
 
   images              PropertyImage[]
@@ -162,9 +163,9 @@ model Property {
 
 
 model PropertyImage {
-  id          String @id @default(uuid()) @db.Uuid
+  id          String @id @default(uuid())
 
-  propertyId  String @db.Uuid
+  propertyId  String
 
   imageUrl    String @db.Text
 
@@ -174,7 +175,7 @@ model PropertyImage {
 
   sortOrder   Int @default(0)
 
-  createdAt   DateTime @default(now()) @db.Timestamptz
+  createdAt   DateTime @default(now())
 
   property Property @relation(fields: [propertyId],references: [id],onDelete: Cascade)
 
@@ -183,9 +184,9 @@ model PropertyImage {
 
 
 model PropertyUnit {
-  id                String @id @default(uuid()) @db.Uuid
+  id                String @id @default(uuid())
 
-  propertyId        String @db.Uuid
+  propertyId        String
 
   unitType          UnitType
 
@@ -197,7 +198,7 @@ model PropertyUnit {
 
   availableUnits    Int?
 
-  createdAt         DateTime @default(now()) @db.Timestamptz
+  createdAt         DateTime @default(now())
 
   property Property @relation(fields: [propertyId],references: [id],onDelete: Cascade)
 
@@ -207,9 +208,9 @@ model PropertyUnit {
 }
 
 model UnitImage {
-  id          String @id @default(uuid()) @db.Uuid
+  id          String @id @default(uuid())
 
-  unitId      String @db.Uuid
+  unitId      String
 
   imageUrl    String @db.Text
 
@@ -232,7 +233,7 @@ enum PartnershipStatus {
 }
 
 model Developer {
-  id                 String @id @default(uuid()) @db.Uuid
+  id                 String @id @default(uuid())
 
   companyName        String @map("company_name") @db.VarChar(255)
   slug               String @unique @db.VarChar(255)
@@ -257,11 +258,11 @@ model Developer {
 
   partnershipStart   DateTime? @map("partnership_start") @db.Date
 
-  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
+  createdAt          DateTime @default(now()) @map("created_at")
 
-  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  updatedAt          DateTime @updatedAt @map("updated_at")
 
-  properties         Property[]
+  properties         Property[] @relation("DeveloperProperties")
 
   @@map("developers")
 }

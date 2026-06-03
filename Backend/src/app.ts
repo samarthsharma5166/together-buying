@@ -2,6 +2,8 @@ import express from 'express'
 import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser'
 import authrouter from './routes/auth.routes.js'
+import developerRouter from './routes/developer.routes.js'
+import propertyRouter from './routes/property.routes.js'
 import errorMiddleware from './middlewares/error.middleware.js'
 
 dotenv.config()
@@ -22,8 +24,13 @@ app.get("/helth",(req,res)=>{
 })
 
 
-// auth routes 
-app.post("/api/auth",authrouter)
+// static file serving
+app.use("/uploads", express.static("uploads"))
+
+// routes 
+app.use("/api/auth", authrouter)
+app.use("/api/developers", developerRouter)
+app.use("/api/properties", propertyRouter)
 
 
 
