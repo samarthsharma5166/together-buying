@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { Menu, Phone, Search, UserRound, X } from "lucide-react";
@@ -6,8 +6,16 @@ import { useEffect, useState } from "react";
 import { navItems } from "@/lib/content";
 import { ButtonLink } from "@/components/button";
 import { PropertySearchFilter } from "@/components/property-search-filter";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { logoutUser } from "@/store/slices/authSlice";
+import { UserDropdown } from "@/components/user-dropdown";
+import { useRouter, usePathname } from "next/navigation";
 
 export function Navbar() {
+  const user = useAppSelector((state) => state.auth.user);
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
 
@@ -20,6 +28,10 @@ export function Navbar() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  if (pathname.startsWith("/admin") || pathname.startsWith("/rm")) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/94 shadow-[0_10px_34px_rgba(17,17,17,.08)] backdrop-blur-2xl">
@@ -43,10 +55,14 @@ export function Navbar() {
             <>
               <Link href="/properties" className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-[#e34b32] shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"><Search size={18} /></Link>
               <a href="tel:+919992196879" className="flex items-center gap-2 rounded-full bg-[#fff3ef] px-4 py-3 text-sm font-black text-[#d9462e]"><Phone size={17} /> Call Now</a>
-              <ButtonLink href="/register" variant="secondary">Corporate</ButtonLink>
+              {!user && <ButtonLink href="/register" variant="secondary">Corporate</ButtonLink>}
             </>
           )}
-          <ButtonLink href="/login" variant="primary"><UserRound size={17} /> Sign In</ButtonLink>
+          {user ? (
+            <UserDropdown />
+          ) : (
+            <ButtonLink href="/login" variant="primary"><UserRound size={17} /> Sign In</ButtonLink>
+          )}
         </div>
         <button aria-label="Toggle menu" onClick={() => setOpen((value) => !value)} className="rounded-full border border-slate-200 bg-white p-3 lg:hidden">
           {open ? <X /> : <Menu />}
@@ -56,7 +72,33 @@ export function Navbar() {
         <div className="border-t border-slate-100 bg-white p-4 lg:hidden">
           <div className="container-shell grid gap-2">
             {navItems.map((item) => <Link key={item.href} href={item.href} onClick={() => setOpen(false)} className="rounded-2xl px-4 py-3 font-semibold text-slate-700 hover:bg-[#fff3ef]">{item.label}</Link>)}
-            <ButtonLink href="/login" variant="primary" className="mt-2">Login / Register</ButtonLink>
+            {user ? (
+              <div className="mt-2 grid gap-1.5 p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="px-1 py-1">
+                  <p className="text-sm font-black text-slate-800">{user.firstName} {user.lastName}</p>
+                  <p className="text-xs text-slate-500">{user.email}</p>
+                </div>
+                <div className="h-px bg-slate-200/60 my-1" />
+                {(user.role === "ADMIN" || user.role === "SUPER_ADMIN") && (
+                  <Link href="/admin/dashboard" onClick={() => setOpen(false)} className="rounded-xl px-2 py-2 text-sm font-bold text-slate-700 hover:bg-white">Admin Dashboard</Link>
+                )}
+                {user.role === "RM" && (
+                  <Link href="/rm/dashboard" onClick={() => setOpen(false)} className="rounded-xl px-2 py-2 text-sm font-bold text-slate-700 hover:bg-white">RM Dashboard</Link>
+                )}
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    dispatch(logoutUser());
+                    router.push("/");
+                  }}
+                  className="flex w-full items-center gap-2 rounded-xl px-2 py-2 text-sm font-bold text-red-600 hover:bg-red-50"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <ButtonLink href="/login" variant="primary" className="mt-2">Login / Register</ButtonLink>
+            )}
           </div>
         </div>
       )}

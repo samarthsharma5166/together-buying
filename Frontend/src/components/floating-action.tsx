@@ -1,4 +1,15 @@
-﻿export function FloatingAction() {
+"use client";
+
+import { usePathname } from "next/navigation";
+
+export function FloatingAction() {
+  const pathname = usePathname();
+
+  // Hide the WhatsApp button in dashboards
+  if (pathname.startsWith("/admin") || pathname.startsWith("/rm")) {
+    return null;
+  }
+
   return (
     <div className="fixed bottom-6 right-6 z-70 hidden md:block">
       <a href="https://wa.me/919992196879" target="_blank" rel="noreferrer" className="group relative flex h-16 w-16 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_18px_55px_rgba(37,211,102,.38)] transition hover:-translate-y-1 hover:scale-105" aria-label="WhatsApp GroupBuying">

@@ -297,6 +297,7 @@ export const listProperties = tryCatch(async (req: AuthenticatedRequest, res: Re
       include: {
         developer: {
           select: {
+            id: true,
             companyName: true,
             logoUrl: true,
           },

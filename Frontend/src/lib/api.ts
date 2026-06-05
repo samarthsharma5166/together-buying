@@ -1,10 +1,21 @@
-﻿export type Developer = {
+import { api } from "@/lib/axios";
+
+export type Developer = {
   id: string;
   companyName: string;
   slug?: string;
   logoUrl?: string | null;
   bannerImageUrl?: string | null;
   headquartersCity?: string | null;
+  contactName?: string | null;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  websiteUrl?: string | null;
+  establishedYear?: number | null;
+  description?: string | null;
+  reraRegistered?: boolean;
+  partnershipStatus?: "ACTIVE" | "SUSPENDED" | "TERMINATED";
+  partnershipStart?: string | Date | null;
   _count?: { properties?: number };
 };
 
@@ -36,6 +47,15 @@ export type Property = {
   possessionStatus?: string | null;
   city?: string | null;
   locality?: string | null;
+  address?: string | null;
+  reraNumber?: string | null;
+  reraState?: string | null;
+  possessionDate?: string | Date | null;
+  totalUnits?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
   minPrice?: string | number | null;
   maxPrice?: string | number | null;
   isFeatured?: boolean;
@@ -45,8 +65,8 @@ export type Property = {
   units?: PropertyUnit[];
 };
 
-type ApiList<T> = { success?: boolean; meta?: { total?: number; page?: number; limit?: number; totalPages?: number }; data?: T[] };
-type ApiItem<T> = { success?: boolean; data?: T };
+export type ApiList<T> = { success?: boolean; meta?: { total?: number; page?: number; limit?: number; totalPages?: number }; data?: T[] };
+export type ApiItem<T> = { success?: boolean; data?: T };
 
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000/api").replace(/\/$/, "");
 const ASSET_BASE = API_BASE.replace(/\/api$/, "");
@@ -65,11 +85,10 @@ export const fallbackDevelopers: Developer[] = [
   { id: "emaar", companyName: "Emaar", headquartersCity: "Gurugram", _count: { properties: 7 } },
 ];
 
-async function safeFetch<T>(path: string, init?: RequestInit): Promise<T | null> {
+async function safeFetch<T>(path: string): Promise<T | null> {
   try {
-    const response = await fetch(`${API_BASE}${path}`, { ...init, next: { revalidate: 60 }, credentials: "include" });
-    if (!response.ok) return null;
-    return (await response.json()) as T;
+    const response = await api.get(path);
+    return response.data as T;
   } catch {
     return null;
   }
@@ -132,15 +151,133 @@ export async function getDevelopers() {
 }
 
 export async function authRequest(path: "/auth/login" | "/auth/register", body: Record<string, string>) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-    credentials: "include",
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload?.message || "Request failed");
-  return payload;
+  try {
+    const response = await api.post(path, body);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Request failed");
+  }
 }
+
+export async function getMe() {
+  try {
+    const response = await api.get("/auth/me");
+    return response.data?.user || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function logoutRequest() {
+  try {
+    const response = await api.post("/auth/logout");
+    return response.data?.success || false;
+  } catch {
+    return false;
+  }
+}
+
+export async function adminCreateDeveloper(formData: FormData): Promise<Developer> {
+  const response = await api.post("/developers", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to create developer");
+  }
+  return response.data.data;
+}
+
+export async function adminUpdateDeveloper(id: string, formData: FormData): Promise<Developer> {
+  const response = await api.patch(`/developers/${id}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to update developer");
+  }
+  return response.data.data;
+}
+
+export async function adminDeleteDeveloper(id: string): Promise<boolean> {
+  const response = await api.delete(`/developers/terminate/${id}`);
+  return response.data?.success || false;
+}
+
+export async function adminListDevelopers(page = 1, limit = 10, search = "", status = "") {
+  const params: Record<string, any> = { page, limit };
+  if (search) params.search = search;
+  if (status) params.status = status;
+  
+  const response = await api.get("/developers", { params });
+  return response.data as ApiList<Developer>;
+}
+
+export async function adminListProperties(
+  page = 1,
+  limit = 10,
+  search = "",
+  status = "",
+  propertyType = "",
+  possessionStatus = ""
+) {
+  const params: Record<string, any> = { page, limit };
+  if (search) params.search = search;
+  if (status) params.status = status;
+  if (propertyType) params.propertyType = propertyType;
+  if (possessionStatus) params.possessionStatus = possessionStatus;
+
+  const response = await api.get("/properties", { params });
+  return response.data as ApiList<Property>;
+}
+
+export async function adminCreateProperty(body: any): Promise<Property> {
+  const response = await api.post("/properties", body);
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to create property");
+  }
+  return response.data.data;
+}
+
+export async function adminUpdateProperty(id: string, body: any): Promise<Property> {
+  const response = await api.patch(`/properties/${id}`, body);
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to update property");
+  }
+  return response.data.data;
+}
+
+export async function adminDeleteProperty(id: string): Promise<boolean> {
+  const response = await api.delete(`/properties/archived/${id}`);
+  return response.data?.success || false;
+}
+
+export async function adminUploadPropertyImages(propertyId: string, formData: FormData): Promise<PropertyImage[]> {
+  const response = await api.post(`/properties/${propertyId}/images`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to upload images");
+  }
+  return response.data.data;
+}
+
+export async function adminDeletePropertyImage(imageId: string): Promise<boolean> {
+  const response = await api.delete(`/properties/images/${imageId}`);
+  return response.data?.success || false;
+}
+
+export async function adminToggleFeatured(id: string, isFeatured: boolean): Promise<Property> {
+  const response = await api.patch(`/properties/${id}/featured`, { isFeatured });
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to toggle featured status");
+  }
+  return response.data.data;
+}
+
 
 

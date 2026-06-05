@@ -1,7 +1,8 @@
-﻿import { clsx, type ClassValue } from "clsx";
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
-  return clsx(inputs);
+  return twMerge(clsx(inputs))
 }
 
 export function formatPrice(value?: string | number | null) {
@@ -24,5 +25,3 @@ export function rangePrice(min?: string | number | null, max?: string | number |
 export function initials(name?: string | null) {
   return (name || "TB").split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "TB";
 }
-
-

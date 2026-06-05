@@ -10,7 +10,12 @@ const errorMiddleware = (error: any, req: Request, res: Response, next: NextFunc
   let statusCode = error.statusCode || 500;
   let message = error.message || 'something went wrong';
 
-  if (error.code === 'LIMIT_UNEXPECTED_FILE') {
+  if (error.name === "ZodError") {
+    statusCode = 400;
+    if (error.errors && Array.isArray(error.errors)) {
+      message = error.errors.map((e: any) => `${e.path.join(".")}: ${e.message}`).join(", ");
+    }
+  } else if (error.code === 'LIMIT_UNEXPECTED_FILE') {
     message = `Unexpected file field: "${error.field}". Please verify that this field name matches the accepted API parameters.`;
     statusCode = 400;
   }

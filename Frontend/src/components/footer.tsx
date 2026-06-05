@@ -1,9 +1,19 @@
-﻿import Link from "next/link";
+"use client";
+
+import Link from "next/link";
 import { Mail, MapPin, Phone, Sparkles } from "lucide-react";
 import { navItems } from "@/lib/content";
 import { Reveal } from "@/components/reveal";
+import { usePathname } from "next/navigation";
 
 export function Footer() {
+  const pathname = usePathname();
+  const isDashboard = pathname.startsWith("/admin") || pathname.startsWith("/rm");
+
+  if (isDashboard) {
+    return null;
+  }
+
   return (
     <footer id="contact" className="footer-animated bg-[#111111] text-white">
       <div className="container-shell relative z-10 grid gap-10 py-16 md:grid-cols-[1.4fr_1fr_1fr]">

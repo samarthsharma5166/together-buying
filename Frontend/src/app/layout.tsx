@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { BottomNav } from "@/components/bottom-nav";
 import { CursorSpotlight } from "@/components/cursor-spotlight";
@@ -8,6 +8,10 @@ import { Navbar } from "@/components/navbar";
 import { ScrollProgress } from "@/components/scroll-progress";
 import { SimpleBuyWidget } from "@/components/simple-buy-widget";
 import "./globals.css";
+
+import { StoreProvider } from "@/store/StoreProvider";
+import { AuthInit } from "@/components/auth-init";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta" });
@@ -21,14 +25,20 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body className={`${inter.variable} ${jakarta.variable}`}>
-        <ScrollProgress />
-        <CursorSpotlight />
-        <Navbar />
-        {children}
-        <Footer />
-        <FloatingAction />
-        <SimpleBuyWidget />
-        <BottomNav />
+        <StoreProvider>
+          <TooltipProvider>
+            <AuthInit />
+            <ScrollProgress />
+            <CursorSpotlight />
+            <Navbar />
+            
+            {children}
+            <Footer />
+            <FloatingAction />
+            <SimpleBuyWidget />
+            <BottomNav />
+          </TooltipProvider>
+        </StoreProvider>
       </body>
     </html>
   );

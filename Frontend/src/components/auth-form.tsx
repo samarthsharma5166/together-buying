@@ -1,21 +1,46 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
-import { authRequest } from "@/lib/api";
+import { useAppDispatch } from "@/store/hooks";
+import { loginUser, registerUser } from "@/store/slices/authSlice";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/button";
 
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
   async function submit(formData: FormData) {
-    setLoading(true); setMessage(null);
+    setSubmitting(true);
+    setMessage(null);
     const body = Object.fromEntries(formData.entries()) as Record<string, string>;
     try {
-      await authRequest(mode === "login" ? "/auth/login" : "/auth/register", body);
-      setMessage(mode === "login" ? "Login successful." : "Registration successful. You can login now.");
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Something went wrong");
-    } finally { setLoading(false); }
+      if (mode === "login") {
+        const user = await dispatch(loginUser(body)).unwrap();
+        setMessage("Login successful. Redirecting...");
+        
+        // Redirect based on role
+        if (user.role === "ADMIN" || user.role === "SUPER_ADMIN") {
+          router.push("/admin/dashboard");
+        } else if (user.role === "RM") {
+          router.push("/rm/dashboard");
+        } else {
+          router.push("/");
+        }
+      } else {
+        await dispatch(registerUser(body)).unwrap();
+        setMessage("Registration successful. Redirecting to login...");
+        setTimeout(() => {
+          router.push("/login");
+        }, 1500);
+      }
+    } catch (error: any) {
+      setMessage(error?.message || "Something went wrong");
+    } finally {
+      setSubmitting(false);
+    }
   }
   return (
     <form action={submit} className="mx-auto grid max-w-md gap-4 rounded-[2.2rem] bg-white p-6 premium-border md:p-8">
@@ -24,7 +49,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       <input name="email" type="email" placeholder="Email" className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 outline-none transition focus:border-[#e34b32] focus:bg-white" />
       <input name="phone" placeholder="Phone" className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 outline-none transition focus:border-[#e34b32] focus:bg-white" />
       <input name="password" type="password" required placeholder="Password" className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 outline-none transition focus:border-[#e34b32] focus:bg-white" />
-      <Button disabled={loading}>{loading ? "Please wait..." : mode === "login" ? "Login" : "Create account"}</Button>
+      <Button disabled={submitting}>{submitting ? "Please wait..." : mode === "login" ? "Login" : "Create account"}</Button>
       {message && <p className="rounded-2xl bg-[#fff3ef] px-4 py-3 text-center text-sm font-bold text-[#d9462e]">{message}</p>}
     </form>
   );
