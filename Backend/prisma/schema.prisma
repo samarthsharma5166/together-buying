@@ -8,7 +8,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -84,20 +84,20 @@ model User {
 
   role           Role   @default(USER)  
 
-  firstName      String   @db.VarChar(100) @map("first_name")
-  lastName       String   @db.VarChar(100) @map("last_name")
+  firstName      String   @map("first_name")
+  lastName       String   @map("last_name")
 
-  email          String   @unique @db.VarChar(255)
-  phone          String   @unique @db.VarChar(15)
+  email          String   @unique
+  phone          String   @unique
 
-  password       String  @db.VarChar(255) @map("password_hash")
+  password       String  @map("password_hash")
   avatarUrl      String?  @map("avatar_url")
 
-  addressLine1   String?  @db.VarChar(100) @map("address_line_1")
-  addressLine2   String?  @db.VarChar(100) @map("address_line_2")
-  city           String?  @db.VarChar(100) @map("city")
-  state          String?  @db.VarChar(100) @map("state")
-  pincode        String?  @db.VarChar(6) @map("pincode")
+  addressLine1   String?  @map("address_line_1")
+  addressLine2   String?  @map("address_line_2")
+  city           String?  @map("city")
+  state          String?  @map("state")
+  pincode        String?  @map("pincode")
 
 
   createdAt      DateTime @default(now()) @map("created_at")
@@ -113,25 +113,25 @@ model Property {
   developerId         String
   createdById         String
 
-  title               String @db.VarChar(255)
-  slug                String @unique @db.VarChar(255)
+  title               String
+  slug                String @unique
 
-  description         String? @db.Text
+  description         String?
 
   propertyType        PropertyType
   status              PropertyStatus
 
-  city                String @db.VarChar(100)
-  locality            String @db.VarChar(100)
-  address             String @db.Text
+  city                String
+  locality            String
+  address             String
 
-  latitude            Decimal? @db.Decimal(10,8)
-  longitude           Decimal? @db.Decimal(11,8)
+  latitude            Decimal?
+  longitude           Decimal?
 
-  reraNumber          String @db.VarChar(100)
-  reraState           String @db.VarChar(50)
+  reraNumber          String
+  reraState           String
 
-  possessionDate      DateTime? @db.Date
+  possessionDate      DateTime?
   possessionStatus    PossessionStatus
 
   minPrice            BigInt
@@ -142,8 +142,8 @@ model Property {
   isFeatured          Boolean @default(false)
   isPreLaunch         Boolean @default(false)
 
-  metaTitle           String? @db.VarChar(255)
-  metaDescription     String? @db.Text
+  metaTitle           String?
+  metaDescription     String?
 
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
@@ -167,9 +167,9 @@ model PropertyImage {
 
   propertyId  String
 
-  imageUrl    String @db.Text
+  imageUrl    String
 
-  caption     String? @db.VarChar(255)
+  caption     String?
 
   imageType   PropertyImageType
 
@@ -190,9 +190,9 @@ model PropertyUnit {
 
   unitType          UnitType
 
-  carpetAreaSqft    Decimal @db.Decimal(8,2)
+  carpetAreaSqft    Decimal
 
-  superAreaSqft     Decimal? @db.Decimal(8,2)
+  superAreaSqft     Decimal?
 
   price             BigInt
 
@@ -212,11 +212,11 @@ model UnitImage {
 
   unitId      String
 
-  imageUrl    String @db.Text
+  imageUrl    String
 
   imageType   UnitImageType
 
-  caption     String? @db.VarChar(255)
+  caption     String?
 
   sortOrder   Int @default(0)
 
@@ -235,28 +235,28 @@ enum PartnershipStatus {
 model Developer {
   id                 String @id @default(uuid())
 
-  companyName        String @map("company_name") @db.VarChar(255)
-  slug               String @unique @db.VarChar(255)
+  companyName        String @map("company_name")
+  slug               String @unique
 
-  logoUrl            String? @map("logo_url") @db.Text
-  bannerImageUrl     String? @map("banner_image_url") @db.Text
+  logoUrl            String? @map("logo_url")
+  bannerImageUrl     String? @map("banner_image_url")
 
-  contactName        String @map("contact_name") @db.VarChar(100)
-  contactEmail       String @unique @map("contact_email") @db.VarChar(255)
-  contactPhone       String @unique @map("contact_phone") @db.VarChar(15)
+  contactName        String @map("contact_name")
+  contactEmail       String @unique @map("contact_email")
+  contactPhone       String @unique @map("contact_phone")
 
-  websiteUrl         String? @map("website_url") @db.Text
+  websiteUrl         String? @map("website_url")
 
   establishedYear    Int? @map("established_year")
-  description        String? @db.Text
+  description        String?
 
-  headquartersCity   String? @map("headquarters_city") @db.VarChar(100)
+  headquartersCity   String? @map("headquarters_city")
 
   reraRegistered     Boolean @default(false) @map("rera_registered")
 
   partnershipStatus  PartnershipStatus @default(ACTIVE) @map("partnership_status")
 
-  partnershipStart   DateTime? @map("partnership_start") @db.Date
+  partnershipStart   DateTime? @map("partnership_start")
 
   createdAt          DateTime @default(now()) @map("created_at")
 

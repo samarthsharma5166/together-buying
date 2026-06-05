@@ -5,11 +5,16 @@ import authrouter from './routes/auth.routes.js'
 import developerRouter from './routes/developer.routes.js'
 import propertyRouter from './routes/property.routes.js'
 import errorMiddleware from './middlewares/error.middleware.js'
+import cors from 'cors'
 
 dotenv.config()
 
 const app = express();
 
+app.use(cors({
+  origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000",
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
