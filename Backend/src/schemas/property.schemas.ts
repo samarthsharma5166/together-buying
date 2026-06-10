@@ -63,6 +63,9 @@ export const propertyBaseObject = z.object({
   isPreLaunch: z.coerce.boolean().optional().default(false),
   metaTitle: z.string().optional().nullable(),
   metaDescription: z.string().optional().nullable(),
+  highlights: z.array(z.string()).optional().default([]),
+  amenities: z.array(z.string()).optional().default([]),
+  specifications: z.array(z.string()).optional().default([]),
   images: z.array(propertyImageSchema).optional().default([]),
   units: z.array(propertyUnitSchema).optional().default([]),
 });

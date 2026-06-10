@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Force recompilation */
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -232,8 +233,8 @@ textarea {
   position: relative;
   isolation: isolate;
   background:
-    linear-gradient(110deg, rgba(17, 17, 17, .76), rgba(227, 75, 50, .78) 52%, rgba(255, 112, 79, .72)),
-    url("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1900&q=90") center/cover fixed;
+    linear-gradient(110deg, rgba(17, 17, 17, .76), rgba(227, 75, 50, .78) 52%, rgba(255, 112, 79, .72));
+    /* url("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1900&q=90") center/cover fixed; */
 }
 
 .property-detail-bg::before,

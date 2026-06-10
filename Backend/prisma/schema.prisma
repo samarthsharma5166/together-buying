@@ -145,6 +145,12 @@ model Property {
   metaTitle           String?
   metaDescription     String?
 
+  highlights          String?
+  amenities           String?
+
+  specifications      String?
+  
+
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -265,4 +271,38 @@ model Developer {
   properties         Property[] @relation("DeveloperProperties")
 
   @@map("developers")
+}
+
+
+enum PropertyGroupStatus {
+  GROUP_FORMING
+  GROUP_ACTIVE
+  NEGOTIATING_WITH_DEVELOPER
+  DEVELOPER_AGREED
+  SOLD_OUT
+  CANCELLED
+}
+
+model PropertyGroup {
+  id                String @id @default(uuid())
+
+  propertyId        String
+
+  rm_id             String
+
+  name              String
+
+  status            PropertyGroupStatus
+
+  
+
+  createdAt         DateTime @default(now())
+
+  updatedAt         DateTime @updatedAt
+
+  property Property @relation(fields: [propertyId],references: [id],onDelete: Cascade)
+
+  rmUser     User     @relation(fields: [rm_id],references: [id],onDelete: Cascade)
+
+  @@map("property_groups")
 }

@@ -48,6 +48,44 @@ const getUniquePropertySlug = async (title: string): Promise<string> => {
   return slug;
 };
 
+// Helper to parse serialized lists back into arrays
+export const formatProperty = (property: any) => {
+  if (!property) return null;
+  const formatted = { ...property };
+  
+  if (typeof formatted.highlights === "string") {
+    try {
+      formatted.highlights = JSON.parse(formatted.highlights);
+    } catch {
+      formatted.highlights = [];
+    }
+  } else if (!formatted.highlights) {
+    formatted.highlights = [];
+  }
+  
+  if (typeof formatted.amenities === "string") {
+    try {
+      formatted.amenities = JSON.parse(formatted.amenities);
+    } catch {
+      formatted.amenities = [];
+    }
+  } else if (!formatted.amenities) {
+    formatted.amenities = [];
+  }
+
+  if (typeof formatted.specifications === "string") {
+    try {
+      formatted.specifications = JSON.parse(formatted.specifications);
+    } catch {
+      formatted.specifications = [];
+    }
+  } else if (!formatted.specifications) {
+    formatted.specifications = [];
+  }
+  
+  return formatted;
+};
+
 /**
  * @desc Create a new property listing with nested units and images
  * @route POST /api/properties
@@ -72,7 +110,7 @@ export const createProperty = tryCatch(async (req: AuthenticatedRequest, res: Re
   const slug = await getUniquePropertySlug(parsedData.title);
 
   // Extract nested creations
-  const { images, units, ...basePropertyData } = parsedData;
+  const { images, units, highlights, amenities, specifications, ...basePropertyData } = parsedData;
 
   // Use database transaction/nested writes for atomic creation
   const property = await prisma.property.create({
@@ -80,6 +118,9 @@ export const createProperty = tryCatch(async (req: AuthenticatedRequest, res: Re
       ...basePropertyData,
       slug,
       createdById: req.user.id,
+      highlights: highlights ? JSON.stringify(highlights) : null,
+      amenities: amenities ? JSON.stringify(amenities) : null,
+      specifications: specifications ? JSON.stringify(specifications) : null,
       images: {
         create: images.map((img) => ({
           imageUrl: img.imageUrl,
@@ -124,7 +165,7 @@ export const createProperty = tryCatch(async (req: AuthenticatedRequest, res: Re
   return res.status(201).json({
     success: true,
     message: "Property listing created successfully",
-    data: serializeBigInt(property),
+    data: serializeBigInt(formatProperty(property)),
   });
 });
 
@@ -169,7 +210,7 @@ export const getProperty = tryCatch(async (req: AuthenticatedRequest, res: Respo
 
   return res.status(200).json({
     success: true,
-    data: serializeBigInt(property),
+    data: serializeBigInt(formatProperty(property)),
   });
 });
 
@@ -206,14 +247,26 @@ export const updateProperty = tryCatch(async (req: AuthenticatedRequest, res: Re
   }
 
   // Exclude nested objects from direct patch update
-  const { images, units, ...updateData } = parsedData;
+  const { images, units, highlights, amenities, specifications, ...updateData } = parsedData;
+
+  const updateFields: any = {
+    ...updateData,
+    slug,
+  };
+
+  if (highlights !== undefined) {
+    updateFields.highlights = highlights ? JSON.stringify(highlights) : null;
+  }
+  if (amenities !== undefined) {
+    updateFields.amenities = amenities ? JSON.stringify(amenities) : null;
+  }
+  if (specifications !== undefined) {
+    updateFields.specifications = specifications ? JSON.stringify(specifications) : null;
+  }
 
   const updatedProperty = await prisma.property.update({
     where: { id },
-    data: removeUndefined({
-      ...updateData,
-      slug,
-    }),
+    data: removeUndefined(updateFields),
     include: {
       images: true,
       units: true,
@@ -223,7 +276,7 @@ export const updateProperty = tryCatch(async (req: AuthenticatedRequest, res: Re
   return res.status(200).json({
     success: true,
     message: "Property listing updated successfully",
-    data: serializeBigInt(updatedProperty),
+    data: serializeBigInt(formatProperty(updatedProperty)),
   });
 });
 
@@ -319,7 +372,7 @@ export const listProperties = tryCatch(async (req: AuthenticatedRequest, res: Re
       limit,
       totalPages: Math.ceil(total / limit),
     },
-    data: serializeBigInt(properties),
+    data: serializeBigInt(properties.map(formatProperty)),
   });
 });
 

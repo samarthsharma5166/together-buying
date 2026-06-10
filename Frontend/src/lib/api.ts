@@ -56,6 +56,9 @@ export type Property = {
   longitude?: number | null;
   metaTitle?: string | null;
   metaDescription?: string | null;
+  highlights?: string[];
+  amenities?: string[];
+  specifications?: string[];
   minPrice?: string | number | null;
   maxPrice?: string | number | null;
   isFeatured?: boolean;
@@ -63,6 +66,8 @@ export type Property = {
   developer?: Partial<Pick<Developer, "companyName" | "logoUrl" | "slug" | "id">> | null;
   images?: PropertyImage[];
   units?: PropertyUnit[];
+  createdAt?: string | Date | null;
+  updatedAt?: string | Date | null;
 };
 
 export type ApiList<T> = { success?: boolean; meta?: { total?: number; page?: number; limit?: number; totalPages?: number }; data?: T[] };

@@ -116,6 +116,14 @@ export default function AdminPropertiesPage() {
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
 
+  // Primitive List form states
+  const [highlights, setHighlights] = useState<string[]>([]);
+  const [newHighlight, setNewHighlight] = useState("");
+  const [amenities, setAmenities] = useState<string[]>([]);
+  const [newAmenity, setNewAmenity] = useState("");
+  const [specifications, setSpecifications] = useState<string[]>([]);
+  const [newSpecification, setNewSpecification] = useState("");
+
   // Nested Property Units Form State
   const [units, setUnits] = useState<
     Array<{
@@ -232,6 +240,12 @@ export default function AdminPropertiesPage() {
     setMetaTitle("");
     setMetaDescription("");
     setUnits([]);
+    setHighlights([]);
+    setNewHighlight("");
+    setAmenities([]);
+    setNewAmenity("");
+    setSpecifications([]);
+    setNewSpecification("");
     dispatch(clearFormError());
     setModalOpen(true);
   };
@@ -261,6 +275,12 @@ export default function AdminPropertiesPage() {
     setMetaTitle(prop.metaTitle || "");
     setMetaDescription(prop.metaDescription || "");
     setUnits([]);
+    setHighlights(prop.highlights || []);
+    setNewHighlight("");
+    setAmenities(prop.amenities || []);
+    setNewAmenity("");
+    setSpecifications(prop.specifications || []);
+    setNewSpecification("");
     dispatch(clearFormError());
     setModalOpen(true);
   };
@@ -304,7 +324,10 @@ export default function AdminPropertiesPage() {
       maxPrice: String(maxPrice),
       isFeatured,
       isPreLaunch,
-      units: formattedUnits
+      units: formattedUnits,
+      highlights,
+      amenities,
+      specifications
     };
 
     if (possessionDate) body.possessionDate = new Date(possessionDate).toISOString();
@@ -926,6 +949,134 @@ export default function AdminPropertiesPage() {
                     <label htmlFor="prelaunch" className="text-xs font-black uppercase text-slate-600 cursor-pointer">
                       Pre Launch Status
                     </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Primitive Lists: Highlights, Amenities, Specifications */}
+              <div className="border-t border-slate-100 pt-5 space-y-6">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">Highlights, Amenities & Specifications</h3>
+
+                {/* Highlights list input */}
+                <div className="space-y-2.5">
+                  <label className="text-xs font-black uppercase text-slate-400">Highlights</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. 5 Mins to Metro Station"
+                      value={newHighlight}
+                      onChange={(e) => setNewHighlight(e.target.value)}
+                      className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-sm outline-none focus:bg-white focus:border-[#e34b32] transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (newHighlight.trim()) {
+                          setHighlights([...highlights, newHighlight.trim()]);
+                          setNewHighlight("");
+                        }
+                      }}
+                      className="px-4 py-2.5 bg-slate-800 text-white font-bold text-xs rounded-xl hover:bg-slate-700 transition"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {highlights.map((h, i) => (
+                      <span key={i} className="inline-flex items-center gap-1.5 bg-slate-100 border border-slate-200/60 px-3 py-1 rounded-xl text-xs text-slate-600">
+                        {h}
+                        <button
+                          type="button"
+                          onClick={() => setHighlights(highlights.filter((_, idx) => idx !== i))}
+                          className="text-slate-400 hover:text-red-500 font-bold transition ml-0.5"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                    {highlights.length === 0 && <p className="text-[11px] text-slate-400 italic">No highlights added yet.</p>}
+                  </div>
+                </div>
+
+                {/* Amenities list input */}
+                <div className="space-y-2.5">
+                  <label className="text-xs font-black uppercase text-slate-400">Amenities</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. Swimming Pool"
+                      value={newAmenity}
+                      onChange={(e) => setNewAmenity(e.target.value)}
+                      className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-sm outline-none focus:bg-white focus:border-[#e34b32] transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (newAmenity.trim()) {
+                          setAmenities([...amenities, newAmenity.trim()]);
+                          setNewAmenity("");
+                        }
+                      }}
+                      className="px-4 py-2.5 bg-slate-800 text-white font-bold text-xs rounded-xl hover:bg-slate-700 transition"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {amenities.map((a, i) => (
+                      <span key={i} className="inline-flex items-center gap-1.5 bg-slate-100 border border-slate-200/60 px-3 py-1 rounded-xl text-xs text-slate-600">
+                        {a}
+                        <button
+                          type="button"
+                          onClick={() => setAmenities(amenities.filter((_, idx) => idx !== i))}
+                          className="text-slate-400 hover:text-red-500 font-bold transition ml-0.5"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                    {amenities.length === 0 && <p className="text-[11px] text-slate-400 italic">No amenities added yet.</p>}
+                  </div>
+                </div>
+
+                {/* Specifications list input */}
+                <div className="space-y-2.5">
+                  <label className="text-xs font-black uppercase text-slate-400">Specifications</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="e.g. Italian Marble Flooring"
+                      value={newSpecification}
+                      onChange={(e) => setNewSpecification(e.target.value)}
+                      className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-sm outline-none focus:bg-white focus:border-[#e34b32] transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (newSpecification.trim()) {
+                          setSpecifications([...specifications, newSpecification.trim()]);
+                          setNewSpecification("");
+                        }
+                      }}
+                      className="px-4 py-2.5 bg-slate-800 text-white font-bold text-xs rounded-xl hover:bg-slate-700 transition"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {specifications.map((s, i) => (
+                      <span key={i} className="inline-flex items-center gap-1.5 bg-slate-100 border border-slate-200/60 px-3 py-1 rounded-xl text-xs text-slate-600">
+                        {s}
+                        <button
+                          type="button"
+                          onClick={() => setSpecifications(specifications.filter((_, idx) => idx !== i))}
+                          className="text-slate-400 hover:text-red-500 font-bold transition ml-0.5"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                    {specifications.length === 0 && <p className="text-[11px] text-slate-400 italic">No specifications added yet.</p>}
                   </div>
                 </div>
               </div>
