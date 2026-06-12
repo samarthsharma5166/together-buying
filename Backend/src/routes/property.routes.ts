@@ -19,7 +19,9 @@ const router = Router();
 // Public routes
 router.get("/featured", getFeaturedProperties);
 router.get("/", listProperties);
-router.get("/:idOrSlug", getProperty);
+
+// Public details route (gated client-side for subscription/role)
+router.get("/:idOrSlug",getProperty);
 
 // Admin-only routes
 router.post("/", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), createProperty);

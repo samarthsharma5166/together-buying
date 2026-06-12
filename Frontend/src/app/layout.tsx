@@ -12,6 +12,7 @@ import "./globals.css";
 import { StoreProvider } from "@/store/StoreProvider";
 import { AuthInit } from "@/components/auth-init";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SubscriptionModal } from "@/components/subscription-modal";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta" });
@@ -36,6 +37,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <Footer />
             <FloatingAction />
             <SimpleBuyWidget />
+            <SubscriptionModal />
             <BottomNav />
           </TooltipProvider>
         </StoreProvider>

@@ -13,6 +13,7 @@ interface SubscriptionState {
   error: string | null;
   formSubmitting: boolean;
   formError: string | null;
+  isSubscriptionModalOpen: boolean;
 }
 
 const initialState: SubscriptionState = {
@@ -21,6 +22,7 @@ const initialState: SubscriptionState = {
   error: null,
   formSubmitting: false,
   formError: null,
+  isSubscriptionModalOpen: false,
 };
 
 // Async Thunks
@@ -77,6 +79,12 @@ const subscriptionSlice = createSlice({
   reducers: {
     clearFormError(state) {
       state.formError = null;
+    },
+    openSubscriptionModal(state) {
+      state.isSubscriptionModalOpen = true;
+    },
+    closeSubscriptionModal(state) {
+      state.isSubscriptionModalOpen = false;
     },
   },
   extraReducers: (builder) => {
@@ -140,5 +148,5 @@ const subscriptionSlice = createSlice({
   },
 });
 
-export const { clearFormError } = subscriptionSlice.actions;
+export const { clearFormError, openSubscriptionModal, closeSubscriptionModal } = subscriptionSlice.actions;
 export default subscriptionSlice.reducer;

@@ -9,6 +9,7 @@ import propertyRouter from './routes/property.routes.js'
 import rmRouter from './routes/rm.routes.js'
 import groupRouter from './routes/group.routes.js'
 import subscriptionPlanRouter from './routes/subscriptionPlan.routes.js'
+import subscriptionRouter from './routes/subscription.routes.js'
 
 // middleware import
 import cookieParser from 'cookie-parser'
@@ -49,6 +50,7 @@ app.use("/api/properties", propertyRouter)
 app.use("/api/rm",rmRouter)
 app.use("/api/groups", groupRouter)
 app.use("/api/subscription-plans", subscriptionPlanRouter)
+app.use("/api/subscriptions", subscriptionRouter)
 
 
 

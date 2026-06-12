@@ -169,8 +169,12 @@ export async function getFeaturedProperties() {
 }
 
 export async function getProperty(idOrSlug: string) {
-  const result = await safeFetch<ApiItem<Property>>(`/properties/${idOrSlug}`);
-  return result?.data || fallbackProperties.find((item) => item.slug === idOrSlug || item.id === idOrSlug) || null;
+  try {
+    const result = await safeFetch<ApiItem<Property>>(`/properties/${idOrSlug}`);
+    return result?.data || fallbackProperties.find((item) => item.slug === idOrSlug || item.id === idOrSlug) || null;
+  } catch (error) {
+    console.log(error)
+  }
 }
 
 export async function getDevelopers() {
@@ -386,6 +390,38 @@ export async function adminDeleteSubscriptionPlan(id: string): Promise<boolean> 
   const response = await api.delete(`/subscription-plans/${id}`);
   return response.data?.success || false;
 }
+
+export async function checkoutSubscriptionPlan(planId: string): Promise<any> {
+  const response = await api.post("/subscriptions/checkout", { planId });
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to initiate checkout");
+  }
+  return response.data.data;
+}
+
+export async function mockCompleteSubscriptionPlan(planId: string): Promise<any> {
+  const response = await api.post("/subscriptions/mock-complete", { planId });
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to complete mock subscription");
+  }
+  return response.data;
+}
+
+export async function verifySubscriptionPaymentPlan(body: {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+  planId: string;
+}): Promise<any> {
+  const response = await api.post("/subscriptions/verify", body);
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to verify subscription payment");
+  }
+  return response.data;
+}
+
+
+
 
 
 

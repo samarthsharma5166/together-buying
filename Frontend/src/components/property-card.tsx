@@ -1,17 +1,32 @@
-﻿import Link from "next/link";
+"use client";
+
+import Link from "next/link";
 import { Heart, MapPin, Phone, Repeat2, Share2, Users } from "lucide-react";
 import type { Property } from "@/lib/api";
 import { getAssetUrl } from "@/lib/api";
 import { initials, rangePrice } from "@/lib/utils";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { openSubscriptionModal } from "@/store/slices/subscriptionSlice";
 
 export function PropertyCard({ property, compact = false }: { property: Property; compact?: boolean }) {
+  const user = useAppSelector((state) => state.auth.user);
+  const dispatch = useAppDispatch();
+
   const image = getAssetUrl(property.images?.[0]?.imageUrl);
   const href = `/properties/${property.slug || property.id}`;
   const joined = property.isPreLaunch ? 4 : property.isFeatured ? 7 : 2;
   const buying = property.isPreLaunch ? 5 : property.isFeatured ? 4 : 3;
 
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const isPremium = !!(user && (user.role === "BUYER_PREMIUM" || user.role === "RM" || user.role === "ADMIN" || user.role === "SUPER_ADMIN"));
+    if (user && !isPremium) {
+      e.preventDefault();
+      dispatch(openSubscriptionModal());
+    }
+  };
+
   return (
-    <Link href={href} className="group magnetic-card hover-lift block overflow-hidden rounded-[1.65rem] bg-white p-3 premium-border">
+    <Link href={href} onClick={handleClick} className="group magnetic-card hover-lift block overflow-hidden rounded-[1.65rem] bg-white p-3 premium-border">
       <div className="relative h-44 overflow-hidden rounded-[1.1rem] bg-gradient-to-br from-[#e34b32] via-[#f36a4b] to-[#111111]">
         {image ? <div className="absolute inset-0 bg-cover bg-center transition duration-500 group-hover:scale-105" style={{ backgroundImage: `url(${image})` }} /> : <div className="absolute inset-0 hero-grid opacity-50" />}
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />

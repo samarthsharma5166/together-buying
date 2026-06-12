@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { 
@@ -29,11 +29,17 @@ import {
   Map,
   UserCheck,
   Wifi,
-  Zap
+  Zap,
+  AlertCircle
 } from "lucide-react";
 import { Button, ButtonLink } from "@/components/button";
 import { formatPrice, initials } from "@/lib/utils";
-import { getAssetUrl, type Property, type PropertyUnit, type PropertyImage } from "@/lib/api";
+import { getAssetUrl, adminListSubscriptionPlans, type SubscriptionPlan, type Property, type PropertyUnit, type PropertyImage } from "@/lib/api";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { useRouter } from "next/navigation";
+import { fetchCurrentUser } from "@/store/slices/authSlice";
+import { payWithRazorpay } from "@/lib/razorpay";
+
 
 type Props = {
   property: Property;
@@ -54,6 +60,74 @@ const RADIUS = (CIRCLE_SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 export default function PropertyDetailClient({ property, related }: Props) {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const user = useAppSelector((state) => state.auth.user);
+  const loading = useAppSelector((state) => state.auth.loading);
+
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [payingPlanId, setPayingPlanId] = useState<string | null>(null);
+  const [payError, setPayError] = useState<string | null>(null);
+
+  const isPremium = !!(user && (user.role === "BUYER_PREMIUM" || user.role === "RM" || user.role === "ADMIN" || user.role === "SUPER_ADMIN"));
+
+  // Protect detail page from unauthenticated users
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push(`/login?redirect=/properties/${property.slug || property.id}`);
+    }
+  }, [user, loading, router, property]);
+
+  // Fetch plans if the logged-in user is not premium
+  useEffect(() => {
+    if (user && user.role === "USER") {
+      setPlansLoading(true);
+      setPayError(null);
+      adminListSubscriptionPlans()
+        .then((res) => {
+          const sorted = (res.data || []).sort((a, b) => a.price - b.price);
+          setPlans(sorted);
+        })
+        .catch((err) => {
+          console.error("Failed to load plans", err);
+          setPayError("Failed to fetch subscription options.");
+        })
+        .finally(() => {
+          setPlansLoading(false);
+        });
+    }
+  }, [user]);
+
+  const handlePurchase = async (planId: string) => {
+    if (!user) return;
+    setPayingPlanId(planId);
+    setPayError(null);
+    try {
+      await payWithRazorpay({
+        planId,
+        userName: `${user.firstName} ${user.lastName}`,
+        userEmail: user.email,
+        userPhone: user.phone || "9999999999",
+        onSuccess: async () => {
+          setPayingPlanId(null);
+          await dispatch(fetchCurrentUser());
+        },
+        onFailure: (err) => {
+          setPayError(err.description || err.message || "Payment transaction failed.");
+          setPayingPlanId(null);
+        },
+        onMockSuccess: async () => {
+          setPayingPlanId(null);
+          await dispatch(fetchCurrentUser());
+        },
+      });
+    } catch (err: any) {
+      setPayError(err.message || "An unexpected error occurred.");
+      setPayingPlanId(null);
+    }
+  };
+
   // 1. Carousel State
   const propertyImages = useMemo(() => {
     if (property.images && property.images.length > 0) {
@@ -471,8 +545,77 @@ export default function PropertyDetailClient({ property, related }: Props) {
         </div>
 
         {/* Tab Detail Pane & Sidebars Layout */}
-        <div className="grid gap-8 lg:grid-cols-[1fr_360px] items-start">
+        <div className="grid gap-8 lg:grid-cols-[1fr_360px] items-start relative">
           
+          {!isPremium && (
+            <div className="absolute inset-0 z-40 bg-[#fcfdfd]/60 backdrop-blur-md flex items-center justify-center p-4 min-h-[550px] rounded-[2.5rem]">
+              <div className="w-full max-w-2xl rounded-[2.5rem] bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 p-8 md:p-10 text-white border border-slate-800 shadow-2xl relative overflow-hidden text-center">
+                {/* Decorative background gradients */}
+                <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-[#e34b32]/20 blur-3xl pointer-events-none" />
+                <div className="absolute -right-20 -bottom-20 h-40 w-40 rounded-full bg-orange-500/10 blur-3xl pointer-events-none" />
+                
+                <div className="max-w-xl mx-auto">
+                  <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-orange-500/10 text-[#e34b32] mb-6 shadow-md shadow-orange-950/20">
+                    <Zap size={28} className="stroke-[2.5] animate-pulse" />
+                  </div>
+                  <h3 className="font-display text-2xl md:text-3xl font-black tracking-tight">
+                    Premium Gated Blueprint Details
+                  </h3>
+                  <p className="mt-3 text-xs md:text-sm text-slate-400 leading-relaxed font-semibold">
+                    Unlock detailed master layouts, exact area measurements, location coordinates, download the developer brochure, and chat directly with Shweta Sharma (Senior RM).
+                  </p>
+                </div>
+
+                {payError && (
+                  <div className="mt-5 flex items-start gap-2.5 rounded-xl bg-red-950/40 border border-red-900/60 p-3 text-red-200 text-xs text-left">
+                    <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                    <span>{payError}</span>
+                  </div>
+                )}
+
+                <div className="mt-8 grid gap-4 sm:grid-cols-2 md:grid-cols-4 text-slate-900">
+                  {plansLoading ? (
+                    <div className="col-span-full py-8 text-center text-slate-400">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#e34b32] border-t-transparent mx-auto"></div>
+                      <p className="mt-2 text-xs font-semibold">Loading membership pricing...</p>
+                    </div>
+                  ) : plans.length === 0 ? (
+                    <div className="col-span-full py-4 text-xs font-semibold text-slate-400 text-center">
+                      No active plans online. Click below to view options.
+                    </div>
+                  ) : (
+                    plans.map((p) => {
+                      const isPaying = payingPlanId === p.id;
+                      return (
+                        <div key={p.id} className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col justify-between hover:shadow-md transition">
+                          <div>
+                            <span className="text-[9px] font-black uppercase tracking-wider text-[#e34b32]">
+                              {p.type.replace("_", " ")}
+                            </span>
+                            <p className="mt-1 font-display text-base font-black text-slate-900">
+                              {formatPrice(p.price)}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handlePurchase(p.id)}
+                            disabled={!!payingPlanId}
+                            className="mt-4 w-full rounded-full bg-slate-950 hover:bg-[#e34b32] text-white py-2.5 text-[9px] font-black uppercase tracking-wider transition disabled:opacity-50"
+                          >
+                            {isPaying ? "Paying..." : "Unlock"}
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-slate-800/80 text-slate-500 text-[10px] font-semibold">
+                  Secured payment checkouts powered by Razorpay. Direct account role upgrade to Buyer Premium.
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB DETAILED PANELS (LEFT) */}
           <div className="space-y-8 min-h-[420px]">
             

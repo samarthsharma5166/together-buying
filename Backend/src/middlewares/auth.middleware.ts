@@ -47,18 +47,21 @@ export const isAuthenticated = tryCatch(async (req: AuthenticatedRequest, res: R
       lastName: true,
     },
   });
-
   if (!user) {
     throw new AppError("User not found", 404);
   }
 
   req.user = user;
+  console.log(req.user)
   next();
 });
 
 
 
 export const authorizedRoles=(...roles:Array<"USER" | "BUYER_PREMIUM" | "RM" | "ADMIN" |"SUPER_ADMIN">)=>async(req:AuthenticatedRequest,res:Response,next:NextFunction)=>{
+      console.log("authorizedRoles called");
+    console.log("User role:", req.user?.role);
+    console.log("Allowed roles:", roles);
   const currentUserRoles = req.user?.role as "USER" | "BUYER_PREMIUM" | "RM" | "ADMIN" |"SUPER_ADMIN";
   if(!currentUserRoles || !roles.includes(currentUserRoles)){
     return next(

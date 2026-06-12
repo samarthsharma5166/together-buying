@@ -41,7 +41,7 @@ export default async function PropertyDetailPage({ params }: Props) {
   // Fetch related properties in the same city for the bottom grid
   const relatedResponse = await getProperties({ 
     city: property.city || undefined, 
-    limit: 4 
+    limit: 4
   });
   
   const related = (relatedResponse?.properties || [])
@@ -51,6 +51,22 @@ export default async function PropertyDetailPage({ params }: Props) {
   // Convert custom objects (like Prisma Decimal) to plain serializable types
   const plainProperty = JSON.parse(JSON.stringify(property));
   const plainRelated = JSON.parse(JSON.stringify(related));
+
+  // Safe JSON list field parser for SQLite raw strings
+  const parseJsonField = (field: any) => {
+    if (typeof field === "string") {
+      try {
+        return JSON.parse(field);
+      } catch {
+        return [];
+      }
+    }
+    return Array.isArray(field) ? field : [];
+  };
+
+  plainProperty.highlights = parseJsonField(plainProperty.highlights);
+  plainProperty.amenities = parseJsonField(plainProperty.amenities);
+  plainProperty.specifications = parseJsonField(plainProperty.specifications);
 
   // Reconstruct decimals into standard numbers to avoid hydration errors
   const reconstructDecimal = (decimalObj: any) => {
@@ -77,6 +93,9 @@ export default async function PropertyDetailPage({ params }: Props) {
     if (item.longitude && typeof item.longitude === "object") {
       item.longitude = reconstructDecimal(item.longitude);
     }
+    item.highlights = parseJsonField(item.highlights);
+    item.amenities = parseJsonField(item.amenities);
+    item.specifications = parseJsonField(item.specifications);
     return item;
   });
 
