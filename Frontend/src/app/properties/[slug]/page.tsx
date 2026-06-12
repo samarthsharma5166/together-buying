@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { getProperty, getProperties } from "@/lib/api";
 import PropertyDetailClient from "./PropertyDetailClient";
@@ -7,7 +8,9 @@ type Props = { params: Promise<{ slug: string }> };
 // SEO Metadata Generation
 export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
-  const property = await getProperty(slug);
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore.toString();
+  const property = await getProperty(slug, cookieHeader);
   
   if (!property) {
     return {
@@ -32,8 +35,10 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function PropertyDetailPage({ params }: Props) {
   const { slug } = await params;
-  const property = await getProperty(slug);
-
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore.toString();
+  const property = await getProperty(slug, cookieHeader);
+  console.log(property)
   if (!property) {
     notFound();
   }
@@ -86,12 +91,37 @@ export default async function PropertyDetailPage({ params }: Props) {
     plainProperty.longitude = reconstructDecimal(plainProperty.longitude);
   }
 
+  // Reconstruct decimals in units for main property
+  if (plainProperty.units && Array.isArray(plainProperty.units)) {
+    plainProperty.units = plainProperty.units.map((unit: any) => {
+      if (unit.carpetAreaSqft && typeof unit.carpetAreaSqft === "object") {
+        unit.carpetAreaSqft = reconstructDecimal(unit.carpetAreaSqft);
+      }
+      if (unit.superAreaSqft && typeof unit.superAreaSqft === "object") {
+        unit.superAreaSqft = reconstructDecimal(unit.superAreaSqft);
+      }
+      return unit;
+    });
+  }
+
   const plainRelatedCleaned = plainRelated.map((item: any) => {
     if (item.latitude && typeof item.latitude === "object") {
       item.latitude = reconstructDecimal(item.latitude);
     }
     if (item.longitude && typeof item.longitude === "object") {
       item.longitude = reconstructDecimal(item.longitude);
+    }
+    // Reconstruct decimals in units for related property
+    if (item.units && Array.isArray(item.units)) {
+      item.units = item.units.map((unit: any) => {
+        if (unit.carpetAreaSqft && typeof unit.carpetAreaSqft === "object") {
+          unit.carpetAreaSqft = reconstructDecimal(unit.carpetAreaSqft);
+        }
+        if (unit.superAreaSqft && typeof unit.superAreaSqft === "object") {
+          unit.superAreaSqft = reconstructDecimal(unit.superAreaSqft);
+        }
+        return unit;
+      });
     }
     item.highlights = parseJsonField(item.highlights);
     item.amenities = parseJsonField(item.amenities);

@@ -21,7 +21,7 @@ router.get("/featured", getFeaturedProperties);
 router.get("/", listProperties);
 
 // Public details route (gated client-side for subscription/role)
-router.get("/:idOrSlug",getProperty);
+router.get("/:idOrSlug",isAuthenticated,authorizedRoles("BUYER_PREMIUM","RM","ADMIN","SUPER_ADMIN"),getProperty);
 
 // Admin-only routes
 router.post("/", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), createProperty);

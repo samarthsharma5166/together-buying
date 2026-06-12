@@ -70,7 +70,7 @@ export default function PropertyDetailClient({ property, related }: Props) {
   const [payingPlanId, setPayingPlanId] = useState<string | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
 
-  const isPremium = !!(user && (user.role === "BUYER_PREMIUM" || user.role === "RM" || user.role === "ADMIN" || user.role === "SUPER_ADMIN"));
+  const isPremium = !!(user && (user.role === "BUYER_PREMIUM" || user.role === "RM" || user.role === "ADMIN" || user.role === "SUPER_ADMIN")) && !property.isLockedPlaceholder;
 
   // Protect detail page from unauthenticated users
   useEffect(() => {
@@ -78,6 +78,14 @@ export default function PropertyDetailClient({ property, related }: Props) {
       router.push(`/login?redirect=/properties/${property.slug || property.id}`);
     }
   }, [user, loading, router, property]);
+
+  // Automatically trigger server component refresh to fetch full details once user upgrades to premium
+  useEffect(() => {
+    const hasPremiumRole = !!(user && (user.role === "BUYER_PREMIUM" || user.role === "RM" || user.role === "ADMIN" || user.role === "SUPER_ADMIN"));
+    if (hasPremiumRole && property.isLockedPlaceholder) {
+      router.refresh();
+    }
+  }, [user, property.isLockedPlaceholder, router]);
 
   // Fetch plans if the logged-in user is not premium
   useEffect(() => {
@@ -112,6 +120,7 @@ export default function PropertyDetailClient({ property, related }: Props) {
         onSuccess: async () => {
           setPayingPlanId(null);
           await dispatch(fetchCurrentUser());
+          router.refresh();
         },
         onFailure: (err) => {
           setPayError(err.description || err.message || "Payment transaction failed.");
@@ -120,6 +129,7 @@ export default function PropertyDetailClient({ property, related }: Props) {
         onMockSuccess: async () => {
           setPayingPlanId(null);
           await dispatch(fetchCurrentUser());
+          router.refresh();
         },
       });
     } catch (err: any) {

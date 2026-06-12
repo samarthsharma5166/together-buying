@@ -69,6 +69,7 @@ export type Property = {
   createdAt?: string | Date | null;
   updatedAt?: string | Date | null;
   groups?: PropertyGroup[];
+  isLockedPlaceholder?: boolean;
 };
 
 export type PropertyGroup = {
@@ -168,12 +169,26 @@ export async function getFeaturedProperties() {
   return result?.data?.length ? result.data : fallbackProperties.slice(0, 3);
 }
 
-export async function getProperty(idOrSlug: string) {
+export async function getProperty(idOrSlug: string, cookieHeader?: string) {
   try {
-    const result = await safeFetch<ApiItem<Property>>(`/properties/${idOrSlug}`);
-    return result?.data || fallbackProperties.find((item) => item.slug === idOrSlug || item.id === idOrSlug) || null;
-  } catch (error) {
-    console.log(error)
+    const headers = cookieHeader ? { Cookie: cookieHeader } : undefined;
+    const response = await api.get(`/properties/${idOrSlug}`, { headers });
+    return response.data?.data || fallbackProperties.find((item) => item.slug === idOrSlug || item.id === idOrSlug) || null;
+  } catch (error: any) {
+    console.warn(`getProperty API call failed for ${idOrSlug}:`, error.response?.status || error.message);
+    if (error.response?.status === 403 || error.response?.status === 401) {
+      const parsedTitle = idOrSlug
+        .split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+      return {
+        id: idOrSlug,
+        title: parsedTitle,
+        slug: idOrSlug,
+        isLockedPlaceholder: true,
+      } as any;
+    }
+    return fallbackProperties.find((item) => item.slug === idOrSlug || item.id === idOrSlug) || null;
   }
 }
 
