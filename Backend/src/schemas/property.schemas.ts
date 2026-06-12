@@ -68,6 +68,11 @@ export const propertyBaseObject = z.object({
   specifications: z.array(z.string()).optional().default([]),
   images: z.array(propertyImageSchema).optional().default([]),
   units: z.array(propertyUnitSchema).optional().default([]),
+  groupName: z.string().min(3, "Group name must be at least 3 characters"),
+  rmId: z.string().uuid("RM ID must be a valid UUID"),
+  minGroupSize: z.coerce.number().int().positive("Min group size must be positive"),
+  targetGroupSize: z.coerce.number().int().positive("Target group size must be positive"),
+  targetDiscount: z.coerce.number().positive("Target discount must be positive"),
 });
 
 // Create property schema with validation logic

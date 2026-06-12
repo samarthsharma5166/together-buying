@@ -103,6 +103,10 @@ model User {
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at") 
   createdProperties Property[] @relation("CreatedProperties")
+  assignedGroups    PropertyGroup[]
+  groupMembership   GroupMembers?
+  subscriptions     subscription[]
+  transactions      transections[]
 
   @@map("users")
 }
@@ -159,6 +163,7 @@ model Property {
 
   images              PropertyImage[]
   units               PropertyUnit[]
+  groups              PropertyGroup[]
   // amenities           PropertyAmenity[]
   // documents           PropertyDocument[]
   // leads               PropertyLead[]
@@ -294,7 +299,13 @@ model PropertyGroup {
 
   status            PropertyGroupStatus
 
-  
+  min_group_size    Int
+
+  target_group_size    Int
+
+  target_discount   Float
+
+  current_members   Int @default(0)
 
   createdAt         DateTime @default(now())
 
@@ -304,5 +315,92 @@ model PropertyGroup {
 
   rmUser     User     @relation(fields: [rm_id],references: [id],onDelete: Cascade)
 
+  members     GroupMembers[]
+
   @@map("property_groups")
+}
+
+
+model GroupMembers{
+  id            String   @id @default(uuid())
+
+  groupId       String
+
+  userId        String   @unique
+
+  createdAt     DateTime @default(now())
+
+  updatedAt     DateTime @updatedAt
+
+  group         PropertyGroup @relation(fields: [groupId],references: [id],onDelete: Cascade)
+
+  user     User     @relation(fields: [userId],references: [id],onDelete: Cascade)
+
+  @@map("group_members")
+}
+
+
+
+enum subscriptionStatus{
+  ACTIVE
+  INACTIVE
+}
+
+enum subscriptionType{
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  LIFE_TIME
+}
+
+model subscriptionPlan{
+  id        String   @id @default(uuid())
+
+  type subscriptionType
+
+  price    Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subscription_plans")
+}
+
+model subscription{
+  id        String   @id @default(uuid())
+
+  userId    String
+  amount    Float
+
+  status    subscriptionStatus
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId],references: [id],onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+enum transectionStatus{
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model transections{
+  id            String   @id @default(uuid())
+
+  userId        String
+
+  amount        Float
+
+  status        transectionStatus
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId],references: [id],onDelete: Cascade)
+
+  @@map("transections")
 }

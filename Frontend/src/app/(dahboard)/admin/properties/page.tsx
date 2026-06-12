@@ -14,6 +14,7 @@ import {
   clearError
 } from "@/store/slices/propertySlice";
 import { fetchDevelopers } from "@/store/slices/developerSlice";
+import { fetchRMsAdmin } from "@/store/slices/groupSlice";
 import { Property, Developer, PropertyImage } from "@/lib/api";
 import {
   Plus,
@@ -116,6 +117,15 @@ export default function AdminPropertiesPage() {
   const [metaTitle, setMetaTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
 
+  // Group Buying Config States
+  const [groupName, setGroupName] = useState("");
+  const [rmId, setRmId] = useState("");
+  const [minGroupSize, setMinGroupSize] = useState("");
+  const [targetGroupSize, setTargetGroupSize] = useState("");
+  const [targetDiscount, setTargetDiscount] = useState("");
+
+  const rms = useAppSelector((state) => state.group.rms);
+
   // Primitive List form states
   const [highlights, setHighlights] = useState<string[]>([]);
   const [newHighlight, setNewHighlight] = useState("");
@@ -156,6 +166,7 @@ export default function AdminPropertiesPage() {
   useEffect(() => {
     loadData(page);
     dispatch(fetchDevelopers({ page: 1, limit: 100, search: "", status: "ACTIVE" }));
+    dispatch(fetchRMsAdmin());
   }, [page]);
 
   // Handle Search and Filter changes
@@ -239,6 +250,11 @@ export default function AdminPropertiesPage() {
     setLongitude("");
     setMetaTitle("");
     setMetaDescription("");
+    setGroupName("");
+    setRmId("");
+    setMinGroupSize("");
+    setTargetGroupSize("");
+    setTargetDiscount("");
     setUnits([]);
     setHighlights([]);
     setNewHighlight("");
@@ -274,6 +290,14 @@ export default function AdminPropertiesPage() {
     setLongitude(prop.longitude ? String(prop.longitude) : "");
     setMetaTitle(prop.metaTitle || "");
     setMetaDescription(prop.metaDescription || "");
+
+    const group = prop.groups?.[0];
+    setGroupName(group?.name || "");
+    setRmId(group?.rm_id || "");
+    setMinGroupSize(group?.min_group_size ? String(group.min_group_size) : "");
+    setTargetGroupSize(group?.target_group_size ? String(group.target_group_size) : "");
+    setTargetDiscount(group?.target_discount ? String(group.target_discount) : "");
+
     setUnits([]);
     setHighlights(prop.highlights || []);
     setNewHighlight("");
@@ -327,7 +351,12 @@ export default function AdminPropertiesPage() {
       units: formattedUnits,
       highlights,
       amenities,
-      specifications
+      specifications,
+      groupName: groupName || `${title} Buying Club`,
+      rmId,
+      minGroupSize: Number(minGroupSize) || 5,
+      targetGroupSize: Number(targetGroupSize) || 20,
+      targetDiscount: Number(targetDiscount) || 10,
     };
 
     if (possessionDate) body.possessionDate = new Date(possessionDate).toISOString();
@@ -1077,6 +1106,84 @@ export default function AdminPropertiesPage() {
                       </span>
                     ))}
                     {specifications.length === 0 && <p className="text-[11px] text-slate-400 italic">No specifications added yet.</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Group Buying Campaign Setup */}
+              <div className="border-t border-slate-100 pt-5 space-y-4">
+                <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">Group Buying Campaign Setup</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black uppercase text-slate-400">Group Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. DLF Privana West Buying Club"
+                      value={groupName}
+                      onChange={(e) => setGroupName(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-sm outline-none focus:bg-white focus:border-[#e34b32] transition"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black uppercase text-slate-400">Assigned RM (Relationship Manager) *</label>
+                    <select
+                      required
+                      value={rmId}
+                      onChange={(e) => setRmId(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-sm outline-none focus:bg-white focus:border-[#e34b32] transition cursor-pointer"
+                    >
+                      <option value="">Select RM</option>
+                      {rms.map((rm) => (
+                        <option key={rm.id} value={rm.id}>
+                          {rm.firstName} {rm.lastName} ({rm.email})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black uppercase text-slate-400">Min Group Size *</label>
+                    <input
+                      type="number"
+                      required
+                      min={1}
+                      placeholder="e.g. 5"
+                      value={minGroupSize}
+                      onChange={(e) => setMinGroupSize(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-sm outline-none focus:bg-white focus:border-[#e34b32] transition"
+                    />
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black uppercase text-slate-400">Target Group Size *</label>
+                    <input
+                      type="number"
+                      required
+                      min={1}
+                      placeholder="e.g. 20"
+                      value={targetGroupSize}
+                      onChange={(e) => setTargetGroupSize(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-sm outline-none focus:bg-white focus:border-[#e34b32] transition"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-black uppercase text-slate-400">Target Discount (%) *</label>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      min={0.1}
+                      max={100}
+                      placeholder="e.g. 8.5"
+                      value={targetDiscount}
+                      onChange={(e) => setTargetDiscount(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-sm outline-none focus:bg-white focus:border-[#e34b32] transition"
+                    />
                   </div>
                 </div>
               </div>

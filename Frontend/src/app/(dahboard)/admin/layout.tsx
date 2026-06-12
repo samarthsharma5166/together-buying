@@ -28,7 +28,8 @@ import {
   Users,
   LogOut,
   User,
-  ShieldCheck
+  ShieldCheck,
+  CreditCard
 } from "lucide-react";
 
 interface SidebarItem {
@@ -41,7 +42,8 @@ const adminNavItems: SidebarItem[] = [
   { label: "Overview", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Properties", href: "/admin/properties", icon: Building2 },
   { label: "Developers", href: "/admin/developers", icon: Briefcase },
-  { label: "Leads", href: "/admin/leads", icon: Users },
+  { label: "Groups & RMs", href: "/admin/groups", icon: Users },
+  { label: "Subscription Plans", href: "/admin/subscriptions", icon: CreditCard },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

@@ -85,6 +85,7 @@ export const formatProperty = (property: any) => {
   
   return formatted;
 };
+1234
 
 /**
  * @desc Create a new property listing with nested units and images
@@ -110,56 +111,87 @@ export const createProperty = tryCatch(async (req: AuthenticatedRequest, res: Re
   const slug = await getUniquePropertySlug(parsedData.title);
 
   // Extract nested creations
-  const { images, units, highlights, amenities, specifications, ...basePropertyData } = parsedData;
+  const { images, units, highlights, amenities, specifications, groupName, rmId, minGroupSize, targetGroupSize, targetDiscount, ...basePropertyData } = parsedData;
 
-  // Use database transaction/nested writes for atomic creation
-  const property = await prisma.property.create({
-    data: removeUndefined({
-      ...basePropertyData,
-      slug,
-      createdById: req.user.id,
-      highlights: highlights ? JSON.stringify(highlights) : null,
-      amenities: amenities ? JSON.stringify(amenities) : null,
-      specifications: specifications ? JSON.stringify(specifications) : null,
-      images: {
-        create: images.map((img) => ({
-          imageUrl: img.imageUrl,
-          caption: img.caption ?? null,
-          imageType: img.imageType,
-          sortOrder: img.sortOrder,
-        })),
-      },
-      units: {
-        create: units.map((unit) => {
-          const unitData: any = {
-            unitType: unit.unitType,
-            carpetAreaSqft: unit.carpetAreaSqft,
-            superAreaSqft: unit.superAreaSqft ?? null,
-            price: unit.price,
-            availableUnits: unit.availableUnits ?? null,
-          };
-          if (unit.images && unit.images.length > 0) {
-            unitData.images = {
-              create: unit.images.map((img) => ({
-                imageUrl: img.imageUrl,
-                imageType: img.imageType,
-                caption: img.caption ?? null,
-                sortOrder: img.sortOrder,
-              })),
+  // Use database transaction for atomic creation of property and group
+  const property = await prisma.$transaction(async (tx) => {
+    const createdProperty = await tx.property.create({
+      data: removeUndefined({
+        ...basePropertyData,
+        slug,
+        createdById: req.user!.id,
+        highlights: highlights ? JSON.stringify(highlights) : null,
+        amenities: amenities ? JSON.stringify(amenities) : null,
+        specifications: specifications ? JSON.stringify(specifications) : null,
+        images: {
+          create: images.map((img) => ({
+            imageUrl: img.imageUrl,
+            caption: img.caption ?? null,
+            imageType: img.imageType,
+            sortOrder: img.sortOrder,
+          })),
+        },
+        units: {
+          create: units.map((unit) => {
+            const unitData: any = {
+              unitType: unit.unitType,
+              carpetAreaSqft: unit.carpetAreaSqft,
+              superAreaSqft: unit.superAreaSqft ?? null,
+              price: unit.price,
+              availableUnits: unit.availableUnits ?? null,
             };
-          }
-          return unitData;
-        }),
+            if (unit.images && unit.images.length > 0) {
+              unitData.images = {
+                create: unit.images.map((img) => ({
+                  imageUrl: img.imageUrl,
+                  imageType: img.imageType,
+                  caption: img.caption ?? null,
+                  sortOrder: img.sortOrder,
+                })),
+              };
+            }
+            return unitData;
+          }),
+        },
+      }),
+    });
+
+    await tx.propertyGroup.create({
+      data: {
+        propertyId: createdProperty.id,
+        rm_id: rmId,
+        name: groupName,
+        status: "GROUP_FORMING",
+        min_group_size: minGroupSize,
+        target_group_size: targetGroupSize,
+        target_discount: targetDiscount,
       },
-    }),
-    include: {
-      images: true,
-      units: {
-        include: {
-          images: true,
+    });
+
+    return await tx.property.findUnique({
+      where: { id: createdProperty.id },
+      include: {
+        images: true,
+        units: {
+          include: {
+            images: true,
+          },
+        },
+        groups: {
+          include: {
+            rmUser: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+              },
+            },
+          },
         },
       },
-    },
+    });
   });
 
   return res.status(201).json({
@@ -198,6 +230,19 @@ export const getProperty = tryCatch(async (req: AuthenticatedRequest, res: Respo
         include: {
           images: {
             orderBy: { sortOrder: "asc" },
+          },
+        },
+      },
+      groups: {
+        include: {
+          rmUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
           },
         },
       },
@@ -247,7 +292,7 @@ export const updateProperty = tryCatch(async (req: AuthenticatedRequest, res: Re
   }
 
   // Exclude nested objects from direct patch update
-  const { images, units, highlights, amenities, specifications, ...updateData } = parsedData;
+  const { images, units, highlights, amenities, specifications, groupName, rmId, minGroupSize, targetGroupSize, targetDiscount, ...updateData } = parsedData;
 
   const updateFields: any = {
     ...updateData,
@@ -264,13 +309,63 @@ export const updateProperty = tryCatch(async (req: AuthenticatedRequest, res: Re
     updateFields.specifications = specifications ? JSON.stringify(specifications) : null;
   }
 
-  const updatedProperty = await prisma.property.update({
-    where: { id },
-    data: removeUndefined(updateFields),
-    include: {
-      images: true,
-      units: true,
-    },
+  const updatedProperty = await prisma.$transaction(async (tx) => {
+    const updated = await tx.property.update({
+      where: { id },
+      data: removeUndefined(updateFields),
+    });
+
+    const groupUpdateFields: any = {};
+    if (groupName !== undefined) groupUpdateFields.name = groupName;
+    if (rmId !== undefined) groupUpdateFields.rm_id = rmId;
+    if (minGroupSize !== undefined) groupUpdateFields.min_group_size = minGroupSize;
+    if (targetGroupSize !== undefined) groupUpdateFields.target_group_size = targetGroupSize;
+    if (targetDiscount !== undefined) groupUpdateFields.target_discount = targetDiscount;
+
+    if (Object.keys(groupUpdateFields).length > 0) {
+      const existingGroup = await tx.propertyGroup.findFirst({
+        where: { propertyId: id }
+      });
+      if (existingGroup) {
+        await tx.propertyGroup.update({
+          where: { id: existingGroup.id },
+          data: groupUpdateFields,
+        });
+      } else {
+        await tx.propertyGroup.create({
+          data: {
+            propertyId: id,
+            rm_id: rmId || req.user!.id,
+            name: groupName || `${updated.title} Buying Club`,
+            status: "GROUP_FORMING",
+            min_group_size: minGroupSize || 5,
+            target_group_size: targetGroupSize || 20,
+            target_discount: targetDiscount || 10,
+          },
+        });
+      }
+    }
+
+    return await tx.property.findUnique({
+      where: { id },
+      include: {
+        images: true,
+        units: true,
+        groups: {
+          include: {
+            rmUser: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+              },
+            },
+          },
+        },
+      },
+    });
   });
 
   return res.status(200).json({
@@ -358,6 +453,19 @@ export const listProperties = tryCatch(async (req: AuthenticatedRequest, res: Re
         images: {
           take: 1, // Get primary showcase image
           orderBy: { sortOrder: "asc" },
+        },
+        groups: {
+          include: {
+            rmUser: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                phone: true,
+              },
+            },
+          },
         },
       },
     }),
@@ -508,6 +616,19 @@ export const getFeaturedProperties = tryCatch(async (req: AuthenticatedRequest, 
       images: {
         take: 1,
         orderBy: { sortOrder: "asc" },
+      },
+      groups: {
+        include: {
+          rmUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+        },
       },
     },
   });

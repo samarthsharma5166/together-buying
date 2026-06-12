@@ -68,6 +68,29 @@ export type Property = {
   units?: PropertyUnit[];
   createdAt?: string | Date | null;
   updatedAt?: string | Date | null;
+  groups?: PropertyGroup[];
+};
+
+export type PropertyGroup = {
+  id: string;
+  propertyId: string;
+  rm_id: string;
+  name: string;
+  status: string;
+  min_group_size: number;
+  target_group_size: number;
+  target_discount: number;
+  current_members: number;
+  createdAt: string;
+  updatedAt: string;
+  property?: Property;
+  rmUser?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+  };
 };
 
 export type ApiList<T> = { success?: boolean; meta?: { total?: number; page?: number; limit?: number; totalPages?: number }; data?: T[] };
@@ -282,6 +305,86 @@ export async function adminToggleFeatured(id: string, isFeatured: boolean): Prom
     throw new Error(response.data?.message || "Failed to toggle featured status");
   }
   return response.data.data;
+}
+
+export async function adminListGroups(): Promise<ApiList<PropertyGroup>> {
+  const response = await api.get("/groups");
+  return response.data;
+}
+
+export async function adminListRMs(): Promise<ApiList<{ id: string; firstName: string; lastName: string; email: string; phone?: string }>> {
+  const response = await api.get("/groups/rms");
+  return response.data;
+}
+
+export async function adminCreateGroup(body: any): Promise<PropertyGroup> {
+  const response = await api.post("/groups", body);
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to create group");
+  }
+  return response.data.data;
+}
+
+export async function adminUpdateGroup(id: string, body: any): Promise<PropertyGroup> {
+  const response = await api.patch(`/groups/${id}`, body);
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to update group");
+  }
+  return response.data.data;
+}
+
+export async function adminDeleteGroup(id: string): Promise<boolean> {
+  const response = await api.delete(`/groups/${id}`);
+  return response.data?.success || false;
+}
+
+export async function adminListUnassignedProperties(): Promise<ApiList<Property>> {
+  const response = await api.get("/groups/unassigned-properties");
+  return response.data;
+}
+
+export async function adminListAssignedProperties(): Promise<ApiList<Property>> {
+  const response = await api.get("/groups/assigned-properties");
+  return response.data;
+}
+
+export type SubscriptionPlan = {
+  id: string;
+  type: "MONTHLY" | "QUARTERLY" | "YEARLY" | "LIFE_TIME";
+  price: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function adminListSubscriptionPlans(): Promise<ApiList<SubscriptionPlan>> {
+  const response = await api.get("/subscription-plans");
+  return response.data;
+}
+
+export async function adminGetSubscriptionPlan(id: string): Promise<ApiItem<SubscriptionPlan>> {
+  const response = await api.get(`/subscription-plans/${id}`);
+  return response.data;
+}
+
+export async function adminCreateSubscriptionPlan(body: any): Promise<SubscriptionPlan> {
+  const response = await api.post("/subscription-plans", body);
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to create subscription plan");
+  }
+  return response.data.data;
+}
+
+export async function adminUpdateSubscriptionPlan(id: string, body: any): Promise<SubscriptionPlan> {
+  const response = await api.patch(`/subscription-plans/${id}`, body);
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to update subscription plan");
+  }
+  return response.data.data;
+}
+
+export async function adminDeleteSubscriptionPlan(id: string): Promise<boolean> {
+  const response = await api.delete(`/subscription-plans/${id}`);
+  return response.data?.success || false;
 }
 
 

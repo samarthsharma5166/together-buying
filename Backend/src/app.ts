@@ -7,6 +7,8 @@ import authrouter from './routes/auth.routes.js'
 import developerRouter from './routes/developer.routes.js'
 import propertyRouter from './routes/property.routes.js'
 import rmRouter from './routes/rm.routes.js'
+import groupRouter from './routes/group.routes.js'
+import subscriptionPlanRouter from './routes/subscriptionPlan.routes.js'
 
 // middleware import
 import cookieParser from 'cookie-parser'
@@ -45,6 +47,8 @@ app.use("/api/auth", authrouter)
 app.use("/api/developers", developerRouter)
 app.use("/api/properties", propertyRouter)
 app.use("/api/rm",rmRouter)
+app.use("/api/groups", groupRouter)
+app.use("/api/subscription-plans", subscriptionPlanRouter)
 
 
 
