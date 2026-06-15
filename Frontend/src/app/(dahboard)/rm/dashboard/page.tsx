@@ -1,23 +1,28 @@
 "use client";
 
-import { useAppSelector } from "@/store/hooks";
-import { Users, Briefcase, MessageSquare, Award, ArrowUpRight, CheckCircle } from "lucide-react";
+import { useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchRmGroups } from "@/store/slices/groupSlice";
+import { Users, Briefcase, MessageSquare, Award, ArrowUpRight, CheckCircle, Clock } from "lucide-react";
 import Link from "next/link";
 
 export default function RMDashboardPage() {
+  const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
+  const { rmGroups, rmLoading, rmError } = useAppSelector((state) => state.group);
+
+  // Fetch groups on mount
+  useEffect(() => {
+    if (user) {
+      dispatch(fetchRmGroups());
+    }
+  }, [user, dispatch]);
 
   // Mock RM stats
-  const activeGroupsCount = 3;
+  const activeGroupsCount = rmGroups.length;
   const assignedLeadsCount = 14;
   const activeChatsCount = 5;
   const closedDealsRate = "82%";
-
-  const myGroups = [
-    { id: "group-1", property: "Godrej Miraya", locality: "Sector 43, Gurugram", members: 8, target: 10, tier: "Gold (3% Off)", progress: 80 },
-    { id: "group-2", property: "DLF Privana West", locality: "Sector 76, Gurugram", members: 12, target: 15, tier: "Platinum (5% Off)", progress: 80 },
-    { id: "group-3", property: "M3M Altitude", locality: "Sector 65, Gurugram", members: 4, target: 8, tier: "Silver (2% Off)", progress: 50 },
-  ];
 
   const recentLeads = [
     { id: "lead-1", name: "Amit Sharma", property: "Godrej Miraya", budget: "₹5.5 Cr", status: "Follow up" },
@@ -94,35 +99,61 @@ export default function RMDashboardPage() {
           </div>
           
           <div className="space-y-6">
-            {myGroups.map((group) => (
-              <div key={group.id} className="border border-slate-100 rounded-2xl p-5 hover:border-slate-200 transition-all space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-800">{group.property}</h3>
-                    <p className="text-xs text-slate-400 mt-0.5">{group.locality}</p>
-                  </div>
-                  <div className="text-right">
-                    <span className="inline-block text-[11px] font-black uppercase tracking-wider text-[#e34b32] bg-[#fff3ef] px-3 py-1 rounded-full border border-orange-100/50">
-                      {group.tier}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs font-semibold text-slate-500">
-                    <span>Group Progress: {group.members}/{group.target} buyers</span>
-                    <span>{group.progress}%</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-[#e34b32] to-[#f06e54]"
-                      style={{ width: `${group.progress}%` }}
-                    />
-                  </div>
-                </div>
+            {rmLoading ? (
+              <div className="py-12 text-center text-slate-400">
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#e34b32] border-t-transparent mx-auto animate-spin"></div>
+                <p className="mt-2 text-xs font-semibold animate-pulse">Loading assigned groups...</p>
               </div>
-            ))}
+            ) : rmError ? (
+              <div className="py-8 text-center text-red-500 text-xs font-semibold">
+                {rmError}
+              </div>
+            ) : rmGroups.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 text-xs font-semibold border border-dashed border-slate-200 rounded-[1.5rem] flex flex-col items-center justify-center gap-2">
+                <Users size={32} className="text-slate-300 animate-pulse" />
+                <p>No assigned groups found.</p>
+              </div>
+            ) : (
+              rmGroups.map((group) => {
+                const progress = Math.min(100, Math.round(((group.current_members || 0) / group.target_group_size) * 100));
+                const propertyTitle = group.property?.title || "Property Listing";
+                const locality = group.property ? `${group.property.locality || ""}, ${group.property.city || ""}` : "Unknown Location";
+                
+                return (
+                  <div key={group.id} className="border border-slate-100 rounded-2xl p-5 hover:border-slate-200 transition-all space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-black text-slate-800">{group.name}</h3>
+                        <p className="text-[11px] text-slate-500 mt-0.5">Property: <strong className="text-slate-700">{propertyTitle}</strong></p>
+                        <p className="text-xs text-slate-400 mt-0.5">{locality}</p>
+                      </div>
+                      <div className="text-left sm:text-right shrink-0">
+                        <span className="inline-block text-[10px] font-black uppercase tracking-wider text-[#e34b32] bg-[#fff3ef] px-3 py-1 rounded-full border border-orange-100/50">
+                          Target: {group.target_discount}% Off
+                        </span>
+                        <p className="text-[9px] text-slate-400 font-bold uppercase mt-1 flex items-center justify-start sm:justify-end gap-1">
+                          <Clock size={10} /> {group.status.replace(/_/g, " ")}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs font-semibold text-slate-500">
+                        <span>Group Progress: {group.current_members}/{group.target_group_size} buyers</span>
+                        <span>{progress}%</span>
+                      </div>
+                      <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-[#e34b32] to-[#f06e54]"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
 

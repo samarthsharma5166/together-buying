@@ -102,6 +102,17 @@ export type PropertyGroup = {
     email: string;
     phone?: string;
   };
+  members?: {
+    id: string;
+    createdAt: string;
+    user: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone?: string;
+    };
+  }[];
 };
 
 export type ApiList<T> = { success?: boolean; meta?: { total?: number; page?: number; limit?: number; totalPages?: number }; data?: T[] };
@@ -505,6 +516,11 @@ export async function getGroupMembershipStatus(groupId: string): Promise<any> {
     throw new Error(response.data?.message || "Failed to fetch membership status");
   }
   return response.data.data;
+}
+
+export async function getRmGroups(): Promise<ApiList<PropertyGroup>> {
+  const response = await api.get("/rm/groups");
+  return response.data;
 }
 
 

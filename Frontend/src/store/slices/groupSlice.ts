@@ -7,6 +7,7 @@ import {
   adminDeleteGroup,
   adminListUnassignedProperties,
   adminListAssignedProperties,
+  getRmGroups,
   type PropertyGroup,
   type Property
 } from "@/lib/api";
@@ -20,6 +21,9 @@ interface GroupState {
   error: string | null;
   formSubmitting: boolean;
   formError: string | null;
+  rmGroups: PropertyGroup[];
+  rmLoading: boolean;
+  rmError: string | null;
 }
 
 const initialState: GroupState = {
@@ -31,6 +35,9 @@ const initialState: GroupState = {
   error: null,
   formSubmitting: false,
   formError: null,
+  rmGroups: [],
+  rmLoading: false,
+  rmError: null,
 };
 
 // Async Thunks
@@ -113,6 +120,18 @@ export const fetchAssignedPropertiesAdmin = createAsyncThunk(
       return response.data || [];
     } catch (err: any) {
       return rejectWithValue(err.message || "Failed to fetch assigned properties");
+    }
+  }
+);
+
+export const fetchRmGroups = createAsyncThunk(
+  "group/fetchRmGroups",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getRmGroups();
+      return response.data || [];
+    } catch (err: any) {
+      return rejectWithValue(err.message || "Failed to fetch RM groups");
     }
   }
 );
@@ -231,6 +250,20 @@ const groupSlice = createSlice({
     builder.addCase(fetchAssignedPropertiesAdmin.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload as string;
+    });
+
+    // Fetch RM Groups
+    builder.addCase(fetchRmGroups.pending, (state) => {
+      state.rmLoading = true;
+      state.rmError = null;
+    });
+    builder.addCase(fetchRmGroups.fulfilled, (state, action) => {
+      state.rmLoading = false;
+      state.rmGroups = action.payload;
+    });
+    builder.addCase(fetchRmGroups.rejected, (state, action) => {
+      state.rmLoading = false;
+      state.rmError = action.payload as string;
     });
   },
 });
