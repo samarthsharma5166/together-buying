@@ -11,11 +11,16 @@ import {
   deletePropertyImage,
   togglePropertyFeatured,
   clearFormError,
-  clearError
+  clearError,
+  createPropertyUnit,
+  updatePropertyUnit,
+  deletePropertyUnit,
+  uploadPropertyUnitImage,
+  deletePropertyUnitImage
 } from "@/store/slices/propertySlice";
 import { fetchDevelopers } from "@/store/slices/developerSlice";
 import { fetchRMsAdmin } from "@/store/slices/groupSlice";
-import { Property, Developer, PropertyImage } from "@/lib/api";
+import { Property, Developer, PropertyImage, PropertyUnit, UnitImage } from "@/lib/api";
 import {
   Plus,
   Search,
@@ -61,6 +66,15 @@ const IMAGE_TYPES = [
   "LOCATION_MAP",
   "CONSTRUCTION_UPDATE",
   "MASTER_PLAN"
+];
+
+const UNIT_IMAGE_TYPES = [
+  "FLOOR_PLAN",
+  "INTERIOR",
+  "BALCONY",
+  "KITCHEN",
+  "BEDROOM",
+  "LIVING_ROOM"
 ];
 
 export default function AdminPropertiesPage() {
@@ -147,6 +161,26 @@ export default function AdminPropertiesPage() {
 
   // Delete State
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Existing Property Unit Editing States
+  const [editingUnitId, setEditingUnitId] = useState<string | null>(null);
+  const [editingUnitType, setEditingUnitType] = useState("BHK_2");
+  const [editingUnitCarpetArea, setEditingUnitCarpetArea] = useState("");
+  const [editingUnitSuperArea, setEditingUnitSuperArea] = useState("");
+  const [editingUnitPrice, setEditingUnitPrice] = useState("");
+  const [editingUnitAvailableUnits, setEditingUnitAvailableUnits] = useState("");
+
+  const [showAddUnitForm, setShowAddUnitForm] = useState(false);
+  const [newUnitType, setNewUnitType] = useState("BHK_2");
+  const [newUnitCarpetArea, setNewUnitCarpetArea] = useState("");
+  const [newUnitSuperArea, setNewUnitSuperArea] = useState("");
+  const [newUnitPrice, setNewUnitPrice] = useState("");
+  const [newUnitAvailableUnits, setNewUnitAvailableUnits] = useState("");
+
+  const [showUnitImagesId, setShowUnitImagesId] = useState<string | null>(null);
+  const unitMediaInputRef = useRef<HTMLInputElement>(null);
+  const [unitMediaType, setUnitMediaType] = useState("FLOOR_PLAN");
+  const [unitMediaCaption, setUnitMediaCaption] = useState("");
 
   // Load Data function
   const loadData = (currentPage: number) => {
@@ -256,6 +290,14 @@ export default function AdminPropertiesPage() {
     setTargetGroupSize("");
     setTargetDiscount("");
     setUnits([]);
+    setEditingUnitId(null);
+    setShowAddUnitForm(false);
+    setShowUnitImagesId(null);
+    setNewUnitType("BHK_2");
+    setNewUnitCarpetArea("");
+    setNewUnitSuperArea("");
+    setNewUnitPrice("");
+    setNewUnitAvailableUnits("");
     setHighlights([]);
     setNewHighlight("");
     setAmenities([]);
@@ -299,6 +341,14 @@ export default function AdminPropertiesPage() {
     setTargetDiscount(group?.target_discount ? String(group.target_discount) : "");
 
     setUnits([]);
+    setEditingUnitId(null);
+    setShowAddUnitForm(false);
+    setShowUnitImagesId(null);
+    setNewUnitType("BHK_2");
+    setNewUnitCarpetArea("");
+    setNewUnitSuperArea("");
+    setNewUnitPrice("");
+    setNewUnitAvailableUnits("");
     setHighlights(prop.highlights || []);
     setNewHighlight("");
     setAmenities(prop.amenities || []);
@@ -403,6 +453,97 @@ export default function AdminPropertiesPage() {
       await dispatch(togglePropertyFeatured({ id, isFeatured: !currentVal })).unwrap();
     } catch (err) {
       alert("Failed to toggle featured status: " + err);
+    }
+  };
+
+  // Add unit configuration to existing property in backend
+  const handleAddUnitToProperty = async () => {
+    if (!editingProperty) return;
+    dispatch(clearFormError());
+    const body = {
+      unitType: newUnitType,
+      carpetAreaSqft: Number(newUnitCarpetArea),
+      superAreaSqft: newUnitSuperArea ? Number(newUnitSuperArea) : null,
+      price: String(newUnitPrice),
+      availableUnits: newUnitAvailableUnits ? Number(newUnitAvailableUnits) : null,
+    };
+    try {
+      await dispatch(createPropertyUnit({ propertyId: editingProperty.id, body })).unwrap();
+      setShowAddUnitForm(false);
+      setNewUnitCarpetArea("");
+      setNewUnitSuperArea("");
+      setNewUnitPrice("");
+      setNewUnitAvailableUnits("");
+    } catch (err) {
+      // Handled in Redux slice formError
+    }
+  };
+
+  // Update existing property unit configurations
+  const handleUpdateUnit = async (unitId: string) => {
+    if (!editingProperty) return;
+    dispatch(clearFormError());
+    const body = {
+      unitType: editingUnitType,
+      carpetAreaSqft: Number(editingUnitCarpetArea),
+      superAreaSqft: editingUnitSuperArea ? Number(editingUnitSuperArea) : null,
+      price: String(editingUnitPrice),
+      availableUnits: editingUnitAvailableUnits ? Number(editingUnitAvailableUnits) : null,
+    };
+    try {
+      await dispatch(updatePropertyUnit({ propertyId: editingProperty.id, unitId, body })).unwrap();
+      setEditingUnitId(null);
+    } catch (err) {
+      // Handled in Redux slice formError
+    }
+  };
+
+  // Delete property unit configuration
+  const handleDeleteUnit = async (unitId: string) => {
+    if (!editingProperty) return;
+    if (confirm("Are you sure you want to delete this unit plan?")) {
+      try {
+        await dispatch(deletePropertyUnit({ propertyId: editingProperty.id, unitId })).unwrap();
+        if (showUnitImagesId === unitId) setShowUnitImagesId(null);
+      } catch (err) {
+        alert("Failed to delete unit plan: " + err);
+      }
+    }
+  };
+
+  // Upload unit floor plans/images
+  const handleUploadUnitImages = async (unitId: string) => {
+    if (!editingProperty || !unitMediaInputRef.current?.files?.length) return;
+    dispatch(clearFormError());
+
+    const files = unitMediaInputRef.current.files;
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append("images", files[i]);
+    }
+    if (unitMediaCaption) formData.append("caption", unitMediaCaption);
+    formData.append("imageType", unitMediaType);
+
+    try {
+      await dispatch(
+        uploadPropertyUnitImage({ propertyId: editingProperty.id, unitId, formData })
+      ).unwrap();
+      
+      // Clear input
+      if (unitMediaInputRef.current) unitMediaInputRef.current.value = "";
+      setUnitMediaCaption("");
+    } catch (err) {
+      // Handled in Redux slice formError
+    }
+  };
+
+  // Delete unit image/floor plan
+  const handleDeleteUnitImage = async (unitId: string, imageId: string) => {
+    if (!editingProperty) return;
+    try {
+      await dispatch(deletePropertyUnitImage({ propertyId: editingProperty.id, unitId, imageId })).unwrap();
+    } catch (err) {
+      alert("Failed to delete unit image: " + err);
     }
   };
 
@@ -1270,6 +1411,345 @@ export default function AdminPropertiesPage() {
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Backend-Driven Property Unit Editing & Image Upload UI */}
+              {editingProperty && (
+                <div className="border-t border-slate-100 pt-5 space-y-4 animate-fade-in">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">Property Floor Plans</h3>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Existing unit configurations and floor plan images.</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddUnitForm(!showAddUnitForm)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-white hover:bg-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
+                    >
+                      {showAddUnitForm ? "Cancel Add" : "+ Add Unit Plan"}
+                    </button>
+                  </div>
+
+                  {/* Add Unit Form */}
+                  {showAddUnitForm && (
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 animate-fade-in">
+                      <p className="text-xs font-bold text-slate-700">Add New Unit Configuration</p>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black uppercase text-slate-400">Unit Type *</label>
+                          <select
+                            value={newUnitType}
+                            onChange={(e) => setNewUnitType(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none cursor-pointer"
+                          >
+                            {UNIT_TYPES.map((ut) => (
+                              <option key={ut} value={ut}>{ut.replace("_", " ")}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black uppercase text-slate-400">Carpet Area (sqft) *</label>
+                          <input
+                            type="number"
+                            placeholder="e.g. 1500"
+                            value={newUnitCarpetArea}
+                            onChange={(e) => setNewUnitCarpetArea(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="space-y-1 col-span-2">
+                          <label className="text-[10px] font-black uppercase text-slate-400">Price (₹) *</label>
+                          <input
+                            type="number"
+                            placeholder="e.g. 24000000"
+                            value={newUnitPrice}
+                            onChange={(e) => setNewUnitPrice(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black uppercase text-slate-400">Super Area (sqft)</label>
+                          <input
+                            type="number"
+                            placeholder="e.g. 1800"
+                            value={newUnitSuperArea}
+                            onChange={(e) => setNewUnitSuperArea(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 items-end pt-2">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-black uppercase text-slate-400">Available Units</label>
+                          <input
+                            type="number"
+                            placeholder="e.g. 10"
+                            value={newUnitAvailableUnits}
+                            onChange={(e) => setNewUnitAvailableUnits(e.target.value)}
+                            className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAddUnitToProperty}
+                          className="w-full py-2.5 bg-[#e34b32] text-white text-xs font-bold rounded-xl hover:bg-[#d9462e] transition"
+                        >
+                          Save Unit Plan
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* List of current Property Units */}
+                  {(() => {
+                    const currentProperty = properties.find((p) => p.id === editingProperty.id) || editingProperty;
+                    const propertyUnits = currentProperty.units || [];
+
+                    if (propertyUnits.length === 0) {
+                      return <p className="text-xs text-slate-400 italic">No unit plans currently created in backend for this property.</p>;
+                    }
+
+                    return (
+                      <div className="space-y-4">
+                        {propertyUnits.map((unit: any) => {
+                          const isEditing = editingUnitId === unit.id;
+                          return (
+                            <div key={unit.id} className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 relative">
+                              {/* Edit Unit Fields Form */}
+                              {isEditing ? (
+                                <div className="space-y-3">
+                                  <p className="text-xs font-bold text-slate-700 font-display">Edit Unit configuration</p>
+                                  
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                      <label className="text-[10px] font-black uppercase text-slate-400">Unit Type *</label>
+                                      <select
+                                        value={editingUnitType}
+                                        onChange={(e) => setEditingUnitType(e.target.value)}
+                                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none cursor-pointer"
+                                      >
+                                        {UNIT_TYPES.map((ut) => (
+                                          <option key={ut} value={ut}>{ut.replace("_", " ")}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                      <label className="text-[10px] font-black uppercase text-slate-400">Carpet Area (sqft) *</label>
+                                      <input
+                                        type="number"
+                                        value={editingUnitCarpetArea}
+                                        onChange={(e) => setEditingUnitCarpetArea(e.target.value)}
+                                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-3 gap-3">
+                                    <div className="space-y-1 col-span-2">
+                                      <label className="text-[10px] font-black uppercase text-slate-400">Price (₹) *</label>
+                                      <input
+                                        type="number"
+                                        value={editingUnitPrice}
+                                        onChange={(e) => setEditingUnitPrice(e.target.value)}
+                                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <label className="text-[10px] font-black uppercase text-slate-400">Super Area (sqft)</label>
+                                      <input
+                                        type="number"
+                                        value={editingUnitSuperArea}
+                                        onChange={(e) => setEditingUnitSuperArea(e.target.value)}
+                                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-3 items-end pt-2">
+                                    <div className="space-y-1">
+                                      <label className="text-[10px] font-black uppercase text-slate-400">Available Units</label>
+                                      <input
+                                        type="number"
+                                        value={editingUnitAvailableUnits}
+                                        onChange={(e) => setEditingUnitAvailableUnits(e.target.value)}
+                                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs outline-none"
+                                      />
+                                    </div>
+                                    <div className="flex gap-2 w-full">
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditingUnitId(null)}
+                                        className="flex-1 py-2.5 border border-slate-200 text-slate-500 text-xs font-bold rounded-xl hover:bg-slate-100 transition"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleUpdateUnit(unit.id)}
+                                        className="flex-1 py-2.5 bg-[#e34b32] text-white text-xs font-bold rounded-xl hover:bg-[#d9462e] transition"
+                                      >
+                                        Update Unit
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : (
+                                /* View Mode */
+                                <div>
+                                  <div className="flex items-center justify-between border-b border-slate-200/60 pb-2 mb-2">
+                                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                                      {unit.unitType?.replace("_", " ")}
+                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingUnitId(unit.id);
+                                          setEditingUnitType(unit.unitType || "BHK_2");
+                                          setEditingUnitCarpetArea(unit.carpetAreaSqft ? String(unit.carpetAreaSqft) : "");
+                                          setEditingUnitSuperArea(unit.superAreaSqft ? String(unit.superAreaSqft) : "");
+                                          setEditingUnitPrice(unit.price ? String(unit.price) : "");
+                                          setEditingUnitAvailableUnits(unit.availableUnits ? String(unit.availableUnits) : "");
+                                        }}
+                                        title="Edit Unit"
+                                        className="p-1.5 text-slate-400 hover:text-[#e34b32] hover:bg-slate-100 rounded-lg transition"
+                                      >
+                                        <Edit3 size={13} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          if (showUnitImagesId === unit.id) {
+                                            setShowUnitImagesId(null);
+                                          } else {
+                                            setShowUnitImagesId(unit.id);
+                                            setUnitMediaCaption("");
+                                            setUnitMediaType("FLOOR_PLAN");
+                                          }
+                                        }}
+                                        title="Manage Unit Floorplans"
+                                        className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                                      >
+                                        <Images size={13} />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteUnit(unit.id)}
+                                        title="Delete Unit"
+                                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-2 gap-y-2 text-xs font-semibold text-slate-600">
+                                    <div>
+                                      Price: <span className="text-slate-900 font-extrabold">{formatPrice(unit.price)}</span>
+                                    </div>
+                                    <div>
+                                      Carpet Area: <span className="text-slate-900 font-extrabold">{unit.carpetAreaSqft} sqft</span>
+                                    </div>
+                                    <div>
+                                      Super Area: <span className="text-slate-900 font-extrabold">{unit.superAreaSqft || "N/A"} sqft</span>
+                                    </div>
+                                    <div>
+                                      Available Units: <span className="text-slate-900 font-extrabold">{unit.availableUnits ?? "N/A"}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Unit floor plans management */}
+                                  {showUnitImagesId === unit.id && (
+                                    <div className="mt-4 pt-4 border-t border-slate-200 space-y-4 animate-reveal-up">
+                                      <div>
+                                        <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Unit Floor Plans Gallery</p>
+                                        {!unit.images || unit.images.length === 0 ? (
+                                          <p className="text-[11px] text-slate-400 italic mt-1.5 bg-white p-3 rounded-xl text-center border border-dashed border-slate-200">No floor plans uploaded for this unit.</p>
+                                        ) : (
+                                          <div className="grid grid-cols-3 gap-2 mt-2">
+                                            {unit.images.map((img: any) => {
+                                              const url = getAssetUrl(img.imageUrl);
+                                              return (
+                                                <div key={img.id} className="relative group/unitimg aspect-square rounded-lg bg-slate-50 overflow-hidden border border-slate-200">
+                                                  {url && <img src={url} alt={img.caption || ""} className="w-full h-full object-cover" />}
+                                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/unitimg:opacity-100 transition flex items-center justify-center">
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => handleDeleteUnitImage(unit.id, img.id)}
+                                                      className="p-1 bg-red-600 rounded text-white hover:bg-red-700 transition"
+                                                    >
+                                                      <Trash2 size={10} />
+                                                    </button>
+                                                  </div>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Sub upload section */}
+                                      <div className="space-y-3 p-3 bg-white border border-slate-200 rounded-2xl">
+                                        <p className="text-[10px] font-black uppercase text-slate-700 font-display">Upload Floor Plan Image</p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <div className="space-y-1">
+                                            <label className="text-[9px] font-black uppercase text-slate-400">Category</label>
+                                            <select
+                                              value={unitMediaType}
+                                              onChange={(e) => setUnitMediaType(e.target.value)}
+                                              className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] outline-none cursor-pointer"
+                                            >
+                                              {UNIT_IMAGE_TYPES.map((t) => (
+                                                <option key={t} value={t}>{t.replace("_", " ")}</option>
+                                              ))}
+                                            </select>
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-[9px] font-black uppercase text-slate-400">Caption</label>
+                                            <input
+                                              type="text"
+                                              placeholder="e.g. Master Bedroom"
+                                              value={unitMediaCaption}
+                                              onChange={(e) => setUnitMediaCaption(e.target.value)}
+                                              className="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] outline-none"
+                                            />
+                                          </div>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                          <input
+                                            type="file"
+                                            ref={unitMediaInputRef}
+                                            accept="image/*"
+                                            className="w-full text-[10px] text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-slate-200 file:text-[10px] file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100 file:cursor-pointer"
+                                          />
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          onClick={() => handleUploadUnitImages(unit.id)}
+                                          disabled={formSubmitting}
+                                          className="w-full py-2 bg-slate-900 text-white font-bold text-[10px] rounded-xl hover:bg-slate-800 transition"
+                                        >
+                                          {formSubmitting ? "Uploading image..." : "Upload Floor Plan"}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
               

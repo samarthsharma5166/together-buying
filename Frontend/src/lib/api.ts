@@ -27,14 +27,24 @@ export type PropertyImage = {
   sortOrder?: number | null;
 };
 
+export type UnitImage = {
+  id?: string;
+  unitId?: string;
+  imageUrl?: string | null;
+  caption?: string | null;
+  imageType?: string | null;
+  sortOrder?: number | null;
+};
+
 export type PropertyUnit = {
   id?: string;
+  unitId?: string;
   unitType?: string | null;
   carpetAreaSqft?: number | null;
   superAreaSqft?: number | null;
   price?: string | number | null;
   availableUnits?: number | null;
-  images?: PropertyImage[];
+  images?: UnitImage[];
 };
 
 export type Property = {
@@ -63,7 +73,7 @@ export type Property = {
   maxPrice?: string | number | null;
   isFeatured?: boolean;
   isPreLaunch?: boolean;
-  developer?: Partial<Pick<Developer, "companyName" | "logoUrl" | "slug" | "id">> | null;
+  developer?: Partial<Developer> | null;
   images?: PropertyImage[];
   units?: PropertyUnit[];
   createdAt?: string | Date | null;
@@ -433,6 +443,44 @@ export async function verifySubscriptionPaymentPlan(body: {
     throw new Error(response.data?.message || "Failed to verify subscription payment");
   }
   return response.data;
+}
+
+export async function adminCreatePropertyUnit(propertyId: string, body: any): Promise<PropertyUnit> {
+  const response = await api.post(`/properties/${propertyId}/units`, body);
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to create property unit");
+  }
+  return response.data.data;
+}
+
+export async function adminUpdatePropertyUnit(unitId: string, body: any): Promise<PropertyUnit> {
+  const response = await api.patch(`/properties/units/${unitId}`, body);
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to update property unit");
+  }
+  return response.data.data;
+}
+
+export async function adminDeletePropertyUnit(unitId: string): Promise<boolean> {
+  const response = await api.delete(`/properties/units/${unitId}`);
+  return response.data?.success || false;
+}
+
+export async function adminUploadPropertyUnitImage(unitId: string, formData: FormData): Promise<UnitImage[]> {
+  const response = await api.post(`/properties/units/${unitId}/images`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to upload unit images");
+  }
+  return response.data.data;
+}
+
+export async function adminDeletePropertyUnitImage(imageId: string): Promise<boolean> {
+  const response = await api.delete(`/properties/units/images/${imageId}`);
+  return response.data?.success || false;
 }
 
 

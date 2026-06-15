@@ -7,8 +7,15 @@ import {
   adminUploadPropertyImages,
   adminDeletePropertyImage,
   adminToggleFeatured,
+  adminCreatePropertyUnit,
+  adminUpdatePropertyUnit,
+  adminDeletePropertyUnit,
+  adminUploadPropertyUnitImage,
+  adminDeletePropertyUnitImage,
   Property,
   PropertyImage,
+  PropertyUnit,
+  UnitImage,
   ApiList
 } from "@/lib/api";
 
@@ -144,6 +151,82 @@ export const togglePropertyFeatured = createAsyncThunk(
   }
 );
 
+export const createPropertyUnit = createAsyncThunk(
+  "property/createPropertyUnit",
+  async (params: { propertyId: string; body: any }, thunkAPI) => {
+    try {
+      const data = await adminCreatePropertyUnit(params.propertyId, params.body);
+      return { propertyId: params.propertyId, unit: data };
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to create property unit"
+      );
+    }
+  }
+);
+
+export const updatePropertyUnit = createAsyncThunk(
+  "property/updatePropertyUnit",
+  async (params: { propertyId: string; unitId: string; body: any }, thunkAPI) => {
+    try {
+      const data = await adminUpdatePropertyUnit(params.unitId, params.body);
+      return { propertyId: params.propertyId, unitId: params.unitId, unit: data };
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to update property unit"
+      );
+    }
+  }
+);
+
+export const deletePropertyUnit = createAsyncThunk(
+  "property/deletePropertyUnit",
+  async (params: { propertyId: string; unitId: string }, thunkAPI) => {
+    try {
+      const success = await adminDeletePropertyUnit(params.unitId);
+      if (!success) {
+        return thunkAPI.rejectWithValue("Failed to delete property unit");
+      }
+      return params;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to delete property unit"
+      );
+    }
+  }
+);
+
+export const uploadPropertyUnitImage = createAsyncThunk(
+  "property/uploadPropertyUnitImage",
+  async (params: { propertyId: string; unitId: string; formData: FormData }, thunkAPI) => {
+    try {
+      const data = await adminUploadPropertyUnitImage(params.unitId, params.formData);
+      return { propertyId: params.propertyId, unitId: params.unitId, images: data };
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to upload unit images"
+      );
+    }
+  }
+);
+
+export const deletePropertyUnitImage = createAsyncThunk(
+  "property/deletePropertyUnitImage",
+  async (params: { propertyId: string; unitId: string; imageId: string }, thunkAPI) => {
+    try {
+      const success = await adminDeletePropertyUnitImage(params.imageId);
+      if (!success) {
+        return thunkAPI.rejectWithValue("Failed to delete unit image");
+      }
+      return params;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to delete unit image"
+      );
+    }
+  }
+);
+
 const propertySlice = createSlice({
   name: "property",
   initialState,
@@ -262,6 +345,118 @@ const propertySlice = createSlice({
       state.properties = state.properties.map((p) =>
         p.id === action.payload.id ? { ...p, isFeatured: action.payload.isFeatured } : p
       );
+    });
+
+    // createPropertyUnit
+    builder.addCase(createPropertyUnit.pending, (state) => {
+      state.formSubmitting = true;
+      state.formError = null;
+    });
+    builder.addCase(createPropertyUnit.fulfilled, (state, action: PayloadAction<{ propertyId: string; unit: PropertyUnit }>) => {
+      state.formSubmitting = false;
+      state.properties = state.properties.map((p) => {
+        if (p.id === action.payload.propertyId) {
+          const currentUnits = p.units || [];
+          return { ...p, units: [...currentUnits, action.payload.unit] };
+        }
+        return p;
+      });
+    });
+    builder.addCase(createPropertyUnit.rejected, (state, action) => {
+      state.formSubmitting = false;
+      state.formError = action.payload as string;
+    });
+
+    // updatePropertyUnit
+    builder.addCase(updatePropertyUnit.pending, (state) => {
+      state.formSubmitting = true;
+      state.formError = null;
+    });
+    builder.addCase(updatePropertyUnit.fulfilled, (state, action: PayloadAction<{ propertyId: string; unitId: string; unit: PropertyUnit }>) => {
+      state.formSubmitting = false;
+      state.properties = state.properties.map((p) => {
+        if (p.id === action.payload.propertyId) {
+          const updatedUnits = (p.units || []).map((u) => u.id === action.payload.unitId ? action.payload.unit : u);
+          return { ...p, units: updatedUnits };
+        }
+        return p;
+      });
+    });
+    builder.addCase(updatePropertyUnit.rejected, (state, action) => {
+      state.formSubmitting = false;
+      state.formError = action.payload as string;
+    });
+
+    // deletePropertyUnit
+    builder.addCase(deletePropertyUnit.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(deletePropertyUnit.fulfilled, (state, action: PayloadAction<{ propertyId: string; unitId: string }>) => {
+      state.loading = false;
+      state.properties = state.properties.map((p) => {
+        if (p.id === action.payload.propertyId) {
+          const filteredUnits = (p.units || []).filter((u) => u.id !== action.payload.unitId);
+          return { ...p, units: filteredUnits };
+        }
+        return p;
+      });
+    });
+    builder.addCase(deletePropertyUnit.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
+    // uploadPropertyUnitImage
+    builder.addCase(uploadPropertyUnitImage.pending, (state) => {
+      state.formSubmitting = true;
+      state.formError = null;
+    });
+    builder.addCase(uploadPropertyUnitImage.fulfilled, (state, action: PayloadAction<{ propertyId: string; unitId: string; images: UnitImage[] }>) => {
+      state.formSubmitting = false;
+      state.properties = state.properties.map((p) => {
+        if (p.id === action.payload.propertyId) {
+          const updatedUnits = (p.units || []).map((u) => {
+            if (u.id === action.payload.unitId) {
+              const currentImages = u.images || [];
+              return { ...u, images: [...currentImages, ...action.payload.images] };
+            }
+            return u;
+          });
+          return { ...p, units: updatedUnits };
+        }
+        return p;
+      });
+    });
+    builder.addCase(uploadPropertyUnitImage.rejected, (state, action) => {
+      state.formSubmitting = false;
+      state.formError = action.payload as string;
+    });
+
+    // deletePropertyUnitImage
+    builder.addCase(deletePropertyUnitImage.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(deletePropertyUnitImage.fulfilled, (state, action: PayloadAction<{ propertyId: string; unitId: string; imageId: string }>) => {
+      state.loading = false;
+      state.properties = state.properties.map((p) => {
+        if (p.id === action.payload.propertyId) {
+          const updatedUnits = (p.units || []).map((u) => {
+            if (u.id === action.payload.unitId) {
+              const filteredImages = (u.images || []).filter((img) => img.id !== action.payload.imageId);
+              return { ...u, images: filteredImages };
+            }
+            return u;
+          });
+          return { ...p, units: updatedUnits };
+        }
+        return p;
+      });
+    });
+    builder.addCase(deletePropertyUnitImage.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload as string;
     });
   },
 });

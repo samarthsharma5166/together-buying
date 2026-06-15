@@ -3,7 +3,7 @@ import { prisma } from "../db/db.js";
 import AppError from "../utils/error.utils.js";
 import { tryCatch } from "../utils/tryCatch.js";
 import type { AuthenticatedRequest } from "../middlewares/auth.middleware.js";
-import { createPropertySchema, updatePropertySchema, toggleFeaturedSchema, updatePossessionStatusSchema } from "../schemas/property.schemas.js";
+import { createPropertySchema, updatePropertySchema, toggleFeaturedSchema, updatePossessionStatusSchema, propertyUnitSchema, updateUnitSchema } from "../schemas/property.schemas.js";
 import { PropertyStatus } from "@prisma/client";
 import { serializeBigInt, removeUndefined } from "../utils/serialize.js";
 import fs from "fs";
@@ -692,5 +692,195 @@ export const updatePossessionStatus = tryCatch(async (req: AuthenticatedRequest,
     success: true,
     message: "Property possession status updated successfully",
     data: serializeBigInt(updatedProperty),
+  });
+});
+
+/**
+ * @desc Create a new unit plan for an existing property
+ * @route POST /api/properties/:propertyId/units
+ * @access Admin/Super Admin
+ */
+export const createPropertyUnit = tryCatch(async (req: AuthenticatedRequest, res: Response) => {
+  const { propertyId } = req.params as { propertyId: string };
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+  });
+  if (!property) {
+    throw new AppError("Property listing not found", 404);
+  }
+
+  const parsedData = propertyUnitSchema.parse(req.body);
+  const { images, ...unitData } = parsedData;
+
+  const unit = await prisma.propertyUnit.create({
+    data: removeUndefined({
+      unitType: unitData.unitType,
+      carpetAreaSqft: unitData.carpetAreaSqft,
+      superAreaSqft: unitData.superAreaSqft ?? null,
+      price: unitData.price,
+      availableUnits: unitData.availableUnits ?? null,
+      propertyId,
+      images: images && images.length > 0 ? {
+        create: images.map((img) => ({
+          imageUrl: img.imageUrl,
+          imageType: img.imageType,
+          caption: img.caption || null,
+          sortOrder: img.sortOrder || 0,
+        }))
+      } : undefined
+    }),
+    include: {
+      images: true
+    }
+  });
+
+  return res.status(201).json({
+    success: true,
+    message: "Property unit created successfully",
+    data: serializeBigInt(unit)
+  });
+});
+
+/**
+ * @desc Update a property unit plan
+ * @route PATCH /api/properties/units/:unitId
+ * @access Admin/Super Admin
+ */
+export const updatePropertyUnit = tryCatch(async (req: AuthenticatedRequest, res: Response) => {
+  const { unitId } = req.params as { unitId: string };
+  const existingUnit = await prisma.propertyUnit.findUnique({
+    where: { id: unitId },
+  });
+  if (!existingUnit) {
+    throw new AppError("Property unit not found", 404);
+  }
+
+  const parsedData = updateUnitSchema.parse(req.body);
+  const { images, ...updateData } = parsedData;
+
+  const updatedUnit = await prisma.propertyUnit.update({
+    where: { id: unitId },
+    data: removeUndefined({
+      unitType: updateData.unitType,
+      carpetAreaSqft: updateData.carpetAreaSqft,
+      superAreaSqft: updateData.superAreaSqft === undefined ? undefined : (updateData.superAreaSqft ?? null),
+      price: updateData.price,
+      availableUnits: updateData.availableUnits === undefined ? undefined : (updateData.availableUnits ?? null),
+    }),
+    include: {
+      images: true
+    }
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "Property unit updated successfully",
+    data: serializeBigInt(updatedUnit)
+  });
+});
+
+/**
+ * @desc Delete a property unit plan
+ * @route DELETE /api/properties/units/:unitId
+ * @access Admin/Super Admin
+ */
+export const deletePropertyUnit = tryCatch(async (req: AuthenticatedRequest, res: Response) => {
+  const { unitId } = req.params as { unitId: string };
+  const existingUnit = await prisma.propertyUnit.findUnique({
+    where: { id: unitId },
+    include: { images: true }
+  });
+  if (!existingUnit) {
+    throw new AppError("Property unit not found", 404);
+  }
+
+  // Delete physical image files from disk
+  if (existingUnit.images) {
+    existingUnit.images.forEach((img) => {
+      deleteFileSafe(img.imageUrl);
+    });
+  }
+
+  await prisma.propertyUnit.delete({
+    where: { id: unitId }
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "Property unit deleted successfully"
+  });
+});
+
+/**
+ * @desc Upload unit images for an existing unit
+ * @route POST /api/properties/units/:unitId/images
+ * @access Admin/Super Admin
+ */
+export const uploadPropertyUnitImage = tryCatch(async (req: AuthenticatedRequest, res: Response) => {
+  const { unitId } = req.params as { unitId: string };
+  const unit = await prisma.propertyUnit.findUnique({
+    where: { id: unitId },
+  });
+  if (!unit) {
+    throw new AppError("Property unit not found", 404);
+  }
+
+  const files = req.files as Express.Multer.File[] | undefined;
+  if (!files || files.length === 0) {
+    throw new AppError("No files uploaded", 400);
+  }
+
+  const caption = typeof req.body.caption === "string" ? req.body.caption : null;
+  const imageType = typeof req.body.imageType === "string" ? req.body.imageType as any : "FLOOR_PLAN";
+
+  try {
+    const createdImages = await prisma.$transaction(
+      files.map((file, idx) =>
+        prisma.unitImage.create({
+          data: {
+            unitId,
+            imageUrl: file.filename,
+            caption,
+            imageType,
+            sortOrder: idx,
+          },
+        })
+      )
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Unit images uploaded successfully",
+      data: serializeBigInt(createdImages),
+    });
+  } catch (error) {
+    files.forEach((file) => deleteFileSafe(file.filename));
+    throw error;
+  }
+});
+
+/**
+ * @desc Delete a unit image
+ * @route DELETE /api/properties/units/images/:imageId
+ * @access Admin/Super Admin
+ */
+export const deletePropertyUnitImage = tryCatch(async (req: AuthenticatedRequest, res: Response) => {
+  const { imageId } = req.params as { imageId: string };
+  const image = await prisma.unitImage.findUnique({
+    where: { id: imageId },
+  });
+  if (!image) {
+    throw new AppError("Unit image not found", 404);
+  }
+
+  await prisma.unitImage.delete({
+    where: { id: imageId },
+  });
+
+  deleteFileSafe(image.imageUrl);
+
+  return res.status(200).json({
+    success: true,
+    message: "Unit image deleted successfully",
   });
 });

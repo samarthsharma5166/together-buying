@@ -151,7 +151,7 @@ export default function SubscribePage() {
             )}
 
             {/* Plans Grid */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 items-stretch mb-20">
+            <div className="flex md:flex-row flex-col gap-4 mb-20">
               {loading ? (
                 // Skeleton cards
                 Array.from({ length: 4 }).map((_, idx) => (
@@ -171,13 +171,13 @@ export default function SubscribePage() {
               ) : (
                 plans.map((plan) => {
                   const isPaying = payingPlanId === plan.id;
-                  const isPopular = plan.type === "YEARLY";
-                  const isLifetime = plan.type === "LIFE_TIME";
+                  const isPopular = plan.type === "LIFE_TIME";
+                  const isLifetime = plan.type === "YEARLY";
                   
                   return (
                     <div
                       key={plan.id}
-                      className={`relative rounded-[2rem] bg-white p-7 border transition-all duration-300 flex flex-col justify-between hover:shadow-xl hover:-translate-y-1 ${
+                      className={`relative rounded-[2rem] flex-1 bg-white p-7 border transition-all duration-300 flex flex-col justify-between hover:shadow-xl hover:-translate-y-1 ${
                         isPopular
                           ? "border-[#e34b32] ring-1 ring-[#e34b32] shadow-md shadow-orange-500/5 z-10"
                           : "border-slate-200/80"

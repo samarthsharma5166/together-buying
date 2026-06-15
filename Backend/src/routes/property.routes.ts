@@ -10,6 +10,11 @@ import {
   getFeaturedProperties,
   toggleFeatured,
   updatePossessionStatus,
+  createPropertyUnit,
+  updatePropertyUnit,
+  deletePropertyUnit,
+  uploadPropertyUnitImage,
+  deletePropertyUnitImage,
 } from "../controllers/property.controllers.js";
 import { isAuthenticated, authorizedRoles } from "../middlewares/auth.middleware.js";
 import { uploadPropertyImages as uploadPropertyImagesMiddleware } from "../middlewares/upload.middleware.js";
@@ -35,5 +40,14 @@ router.delete("/images/:imageId", isAuthenticated, authorizedRoles("ADMIN", "SUP
 // Status updates
 router.patch("/:id/featured", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), toggleFeatured);
 router.patch("/:id/possession-status", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), updatePossessionStatus);
+
+// Property Unit management routes
+router.post("/:propertyId/units", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), createPropertyUnit);
+router.patch("/units/:unitId", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), updatePropertyUnit);
+router.delete("/units/:unitId", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), deletePropertyUnit);
+
+// Property Unit Image management routes
+router.post("/units/:unitId/images", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), uploadPropertyImagesMiddleware, uploadPropertyUnitImage);
+router.delete("/units/images/:imageId", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), deletePropertyUnitImage);
 
 export default router;

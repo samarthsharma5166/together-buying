@@ -147,15 +147,10 @@ export default function PropertyDetailClient({ property, related }: Props) {
   }, [property.images]);
 
   const carouselImages = useMemo(() => {
-    const list = [...propertyImages];
-    // if (list.length === 0) {
-    //   return DEFAULT_REAL_ESTATE_IMAGES;
-    // }
-    // if (list.length < 4) {
-    //   const remaining = 4 - list.length;
-    //   list.push(...DEFAULT_REAL_ESTATE_IMAGES.slice(0, remaining));
-    // }
-    return list;
+    if (propertyImages.length > 0) {
+      return propertyImages;
+    }
+    return DEFAULT_REAL_ESTATE_IMAGES;
   }, [propertyImages]);
 
   const [activeImgIndex, setActiveImgIndex] = useState(0);
@@ -168,20 +163,72 @@ export default function PropertyDetailClient({ property, related }: Props) {
   const membersCount = mockBaseMembers + (joinedGroup ? 1 : 0);
 
   // 3. Tab State
-  const tabs = [
-    { id: "details", label: "Property Details" },
-    { id: "highlights", label: "Highlights" },
-    { id: "layout", label: "Layout Plan" },
-    { id: "emi", label: "EMI Calculator" },
-    { id: "amenities", label: "Amenities" },
-    { id: "specifications", label: "Specifications" },
-    { id: "location", label: "Location" },
-    { id: "developer", label: "About Developer" },
-  ];
+  const tabs = useMemo(() => {
+    const list = [{ id: "details", label: "Property Details" }];
+    
+    if (property.highlights && property.highlights.length > 0) {
+      list.push({ id: "highlights", label: "Highlights" });
+    }
+    
+    const hasUnits = property.units && property.units.length > 0;
+    const hasMasterPlan = property.images && property.images.some(img => img.imageType === "MASTER_PLAN");
+    const hasUnitImages = property.units && property.units.some(unit => unit.images && unit.images.length > 0);
+    
+    if (hasUnits || hasMasterPlan || hasUnitImages) {
+      list.push({ id: "layout", label: "Layout Plan" });
+    }
+    
+    list.push({ id: "emi", label: "EMI Calculator" });
+    
+    if (property.amenities && property.amenities.length > 0) {
+      list.push({ id: "amenities", label: "Amenities" });
+    }
+    
+    if (property.specifications && property.specifications.length > 0) {
+      list.push({ id: "specifications", label: "Specifications" });
+    }
+    
+    list.push({ id: "location", label: "Location" });
+    
+    if (property.developer) {
+      list.push({ id: "developer", label: "About Developer" });
+    }
+    
+    return list;
+  }, [property]);
+
   const [activeTab, setActiveTab] = useState("details");
 
   // 4. Layout plan subtabs
-  const [activeLayoutSubTab, setActiveLayoutSubTab] = useState("master");
+  const layoutSubTabs = useMemo(() => {
+    const subTabs: { id: string; label: string }[] = [];
+    
+    const masterPlanImg = property.images?.find(img => img.imageType === "MASTER_PLAN");
+    if (masterPlanImg) {
+      subTabs.push({ id: "master", label: "Master Plan" });
+    }
+    
+    if (property.units && property.units.length > 0) {
+      property.units.forEach((unit, uIdx) => {
+        subTabs.push({ id: `unit-${uIdx}`, label: `${unit.unitType} (${formatPrice(unit.price)})` });
+      });
+    }
+    
+    return subTabs;
+  }, [property]);
+
+  const [activeLayoutSubTab, setActiveLayoutSubTab] = useState("");
+
+  useEffect(() => {
+    if (layoutSubTabs.length > 0) {
+      const exists = layoutSubTabs.some(tab => tab.id === activeLayoutSubTab);
+      if (!exists) {
+        setActiveLayoutSubTab(layoutSubTabs[0].id);
+      }
+    } else {
+      setActiveLayoutSubTab("");
+    }
+  }, [layoutSubTabs, activeLayoutSubTab]);
 
   // 5. EMI Calculator State
   const minPriceNum = Number(property.minPrice) || 8000000;
@@ -191,6 +238,11 @@ export default function PropertyDetailClient({ property, related }: Props) {
   const [downPayment, setDownPayment] = useState(Math.round(minPriceNum * 0.2));
   const [interestRate, setInterestRate] = useState(8.5);
   const [loanTenure, setLoanTenure] = useState(20);
+
+  useEffect(() => {
+    setLoanAmount(Math.round(minPriceNum * 0.8));
+    setDownPayment(Math.round(minPriceNum * 0.2));
+  }, [minPriceNum]);
 
   const emiCalculations = useMemo(() => {
     const principal = Math.max(0, loanAmount - downPayment);
@@ -226,19 +278,23 @@ export default function PropertyDetailClient({ property, related }: Props) {
 
   // Derived Pricing Calculations
   const calculatedDiscount = useMemo(() => {
-    if (maxPriceNum && minPriceNum && maxPriceNum > minPriceNum) {
-      const discountVal = maxPriceNum - minPriceNum;
-      const pct = Math.round((discountVal / maxPriceNum) * 100);
+    const min = Number(property.minPrice) || 0;
+    const max = Number(property.maxPrice) || 0;
+    if (max && min && max > min) {
+      const discountVal = max - min;
+      const pct = Math.round((discountVal / max) * 100);
       return {
         value: discountVal,
-        percentage: pct
+        percentage: pct,
+        hasDiscount: true
       };
     }
     return {
-      value: Math.round(minPriceNum * 0.18),
-      percentage: 18
+      value: 0,
+      percentage: 0,
+      hasDiscount: false
     };
-  }, [minPriceNum, maxPriceNum]);
+  }, [property.minPrice, property.maxPrice]);
 
   // Handlers
   const handlePrevImage = () => {
@@ -257,11 +313,47 @@ export default function PropertyDetailClient({ property, related }: Props) {
     }
   };
 
-  const firstUnit = property.units?.[0] || {
-    unitType: property.propertyType === "COMMERCIAL" ? "Commercial Shop" : "3 BHK",
-    superAreaSqft: 2175,
-    carpetAreaSqft: 1850
-  };
+  const rmUser = useMemo(() => {
+    return property.groups?.[0]?.rmUser;
+  }, [property.groups]);
+
+  const rmName = rmUser ? `${rmUser.firstName} ${rmUser.lastName}` : "Shweta Sharma";
+  const rmPhone = rmUser?.phone || "9999999999";
+  const rmEmail = rmUser?.email || "shweta@togetherbuying.com";
+
+  const firstUnit = property.units?.[0];
+
+  const superAreaText = useMemo(() => {
+    if (!property.units || property.units.length === 0) return "On Request";
+    const areas = property.units.map(u => u.superAreaSqft || u.carpetAreaSqft).filter(Boolean) as number[];
+    if (areas.length === 0) return "On Request";
+    const minArea = Math.min(...areas);
+    const maxArea = Math.max(...areas);
+    return minArea === maxArea ? `${minArea} sq.ft.` : `${minArea} - ${maxArea} sq.ft.`;
+  }, [property.units]);
+
+  const configurations = useMemo(() => {
+    if (!property.units || property.units.length === 0) return "N/A";
+    return Array.from(new Set(property.units.map(u => u.unitType))).join(", ");
+  }, [property.units]);
+
+  const carpetAreaText = useMemo(() => {
+    if (!property.units || property.units.length === 0) return "Area on request";
+    const areas = property.units.map(u => u.carpetAreaSqft).filter(Boolean) as number[];
+    if (areas.length === 0) return "Area on request";
+    const minArea = Math.min(...areas);
+    const maxArea = Math.max(...areas);
+    return minArea === maxArea ? `${minArea} Sq.ft.` : `${minArea} - ${maxArea} Sq.ft.`;
+  }, [property.units]);
+
+  const possessionDateText = useMemo(() => {
+    if (!property.possessionDate) return "On Request";
+    try {
+      return new Date(property.possessionDate).toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+    } catch {
+      return String(property.possessionDate);
+    }
+  }, [property.possessionDate]);
 
   return (
     <main className="bg-[#fcfdfd] py-6 pb-20">
@@ -292,9 +384,11 @@ export default function PropertyDetailClient({ property, related }: Props) {
             
             <div>
               <div className="flex flex-wrap gap-2 mb-4">
-                <span className="rounded-full bg-[#e34b32] px-4 py-1.5 text-xs font-bold text-white shadow-sm">
-                  {firstUnit.unitType}
-                </span>
+                {firstUnit && (
+                  <span className="rounded-full bg-[#e34b32] px-4 py-1.5 text-xs font-bold text-white shadow-sm">
+                    {firstUnit.unitType}
+                  </span>
+                )}
                 {property.isPreLaunch && (
                   <span className="rounded-full bg-[#f3b64a] px-4 py-1.5 text-xs font-bold text-slate-900 shadow-sm">
                     Pre Launch
@@ -316,11 +410,11 @@ export default function PropertyDetailClient({ property, related }: Props) {
 
               <p className="mt-3 flex items-start gap-1.5 text-slate-600 text-sm md:text-base">
                 <MapPin size={18} className="text-[#e34b32] shrink-0 mt-0.5" />
-                <span>{[property.address].filter(Boolean).join(", ") || "Prime Location, Delhi NCR"}</span>
+                <span>{property.address || `${property.locality ? `${property.locality}, ` : ""}${property.city || "Delhi NCR"}`}</span>
               </p>
 
               <p className="mt-4 text-sm font-bold text-slate-600 tracking-wide">
-                Super area : <span className="text-slate-900 font-extrabold">{firstUnit.superAreaSqft || firstUnit.carpetAreaSqft || 2175} sq.ft.</span>
+                Super area : <span className="text-slate-900 font-extrabold">{superAreaText}</span>
               </p>
             </div>
 
@@ -331,9 +425,11 @@ export default function PropertyDetailClient({ property, related }: Props) {
                   <p className="mt-1 font-display text-3xl font-black text-[#e34b32] tracking-tight">
                     {formatPrice(property.minPrice)}
                   </p>
-                  <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
-                    <BadgePercent size={14} /> Up to {formatPrice(calculatedDiscount.value)} off
-                  </span>
+                  {calculatedDiscount.hasDiscount && (
+                    <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md">
+                      <BadgePercent size={14} /> Up to {formatPrice(calculatedDiscount.value)} off
+                    </span>
+                  )}
                 </div>
                 
                 <div className="text-right">
@@ -341,9 +437,11 @@ export default function PropertyDetailClient({ property, related }: Props) {
                   <p className="mt-1 font-display text-2xl font-bold text-slate-400 line-through tracking-tight">
                     {formatPrice(property.maxPrice)}
                   </p>
-                  <p className="mt-1.5 text-xs font-bold text-[#e34b32]">
-                    Get upto {calculatedDiscount.percentage}% discount on this property
-                  </p>
+                  {calculatedDiscount.hasDiscount && (
+                    <p className="mt-1.5 text-xs font-bold text-[#e34b32]">
+                      Get upto {calculatedDiscount.percentage}% discount on this property
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -572,7 +670,7 @@ export default function PropertyDetailClient({ property, related }: Props) {
                     Premium Gated Blueprint Details
                   </h3>
                   <p className="mt-3 text-xs md:text-sm text-slate-400 leading-relaxed font-semibold">
-                    Unlock detailed master layouts, exact area measurements, location coordinates, download the developer brochure, and chat directly with Shweta Sharma (Senior RM).
+                    Unlock detailed master layouts, exact area measurements, location coordinates, download the developer brochure, and chat directly with {rmName} (Senior RM).
                   </p>
                 </div>
 
@@ -645,110 +743,88 @@ export default function PropertyDetailClient({ property, related }: Props) {
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-6 text-sm mb-8">
                   <div className="p-3.5 bg-slate-50/50 rounded-xl">
                     <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Units</span>
-                    <strong className="block text-slate-800 text-sm mt-1">{property.totalUnits || 150} Units</strong>
+                    <strong className="block text-slate-800 text-sm mt-1">
+                      {property.totalUnits !== null && property.totalUnits !== undefined ? `${property.totalUnits} Units` : "On Request"}
+                    </strong>
                   </div>
                   
                   <div className="p-3.5 bg-slate-50/50 rounded-xl">
                     <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Configuration</span>
-                    <strong className="block text-slate-800 text-sm mt-1">{firstUnit.unitType}</strong>
+                    <strong className="block text-slate-800 text-sm mt-1">{configurations}</strong>
                   </div>
 
                   <div className="p-3.5 bg-slate-50/50 rounded-xl">
                     <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Possession Status</span>
                     <strong className="block text-slate-800 text-sm mt-1 capitalize">
-                      {property.possessionStatus?.toLowerCase().replace(/_/g, " ") || "Under Construction"}
+                      {property.possessionStatus?.toLowerCase().replace(/_/g, " ") || "On Request"}
                     </strong>
                   </div>
 
                   <div className="p-3.5 bg-slate-50/50 rounded-xl">
                     <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Carpet Area</span>
                     <strong className="block text-slate-800 text-sm mt-1">
-                      {firstUnit.carpetAreaSqft ? `${firstUnit.carpetAreaSqft} Sq.ft.` : "Area on request"}
+                      {carpetAreaText}
                     </strong>
                   </div>
 
                   <div className="p-3.5 bg-slate-50/50 rounded-xl">
                     <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">RERA ID</span>
                     <strong className="block text-slate-800 text-sm mt-1 truncate" title={property.reraNumber || "N/A"}>
-                      {property.reraNumber || "UPRERAPRJ241604"}
+                      {property.reraNumber || "On Request"}
                     </strong>
-                  </div>
-
-                  <div className="p-3.5 bg-slate-50/50 rounded-xl">
-                    <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Project Area (Acres)</span>
-                    <strong className="block text-slate-800 text-sm mt-1">11.81 Acre</strong>
                   </div>
 
                   <div className="p-3.5 bg-slate-50/50 rounded-xl">
                     <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Possession Date</span>
                     <strong className="block text-slate-800 text-sm mt-1">
-                      {property.possessionDate ? String(property.possessionDate) : "March, 2028"}
+                      {possessionDateText}
                     </strong>
                   </div>
 
-                  <div className="p-3.5 bg-slate-50/50 rounded-xl">
-                    <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Developer</span>
-                    <strong className="block text-[#e34b32] text-sm mt-1 truncate hover:underline">
-                      <Link href={property.developer?.slug ? `/developers/${property.developer.slug}` : "#"}>
-                        {property.developer?.companyName || "Nimbus Realty"}
-                      </Link>
-                    </strong>
-                  </div>
+                  {property.developer && (
+                    <div className="p-3.5 bg-slate-50/50 rounded-xl">
+                      <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Developer</span>
+                      <strong className="block text-[#e34b32] text-sm mt-1 truncate hover:underline">
+                        <Link href={property.developer.slug ? `/developers/${property.developer.slug}` : "#"}>
+                          {property.developer.companyName}
+                        </Link>
+                      </strong>
+                    </div>
+                  )}
 
                   <div className="p-3.5 bg-slate-50/50 rounded-xl">
                     <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Launch Date</span>
                     <strong className="block text-slate-800 text-sm mt-1">
-                      {property.createdAt ? new Date(property.createdAt).toLocaleDateString("en-IN", { month: "long", year: "numeric" }) : "April, 2024"}
+                      {property.createdAt ? new Date(property.createdAt).toLocaleDateString("en-IN", { month: "long", year: "numeric" }) : "N/A"}
                     </strong>
                   </div>
                 </div>
 
-                <div className="border-t border-slate-100 pt-6">
-                  <h3 className="font-display text-lg font-black text-slate-900 mb-3">Overview</h3>
-                  <p className="text-slate-600 text-sm leading-7 whitespace-pre-line">
-                    {property.description || "This premium residences property is eligible for buyer-group bulk saving negotiations, full cashbacks and custom supports. Beautiful layout plans, premium design constructs and exceptional infrastructure connectivity defines the development core."}
-                  </p>
-                </div>
+                {property.description && (
+                  <div className="border-t border-slate-100 pt-6">
+                    <h3 className="font-display text-lg font-black text-slate-900 mb-3">Overview</h3>
+                    <p className="text-slate-600 text-sm leading-7 whitespace-pre-line">
+                      {property.description}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
             {/* 3.2 HIGHLIGHTS TAB */}
-            {activeTab === "highlights" && (
+            {activeTab === "highlights" && property.highlights && property.highlights.length > 0 && (
               <div className="rounded-[2rem] bg-white p-7 premium-border shadow-xs animate-fade-in">
                 <h2 className="font-display text-2xl font-black text-[#111111] mb-6">Highlights</h2>
                 
                 <div className="space-y-4">
-                  {(property.highlights && property.highlights.length > 0) ? (
-                    property.highlights.map((item, index) => (
-                      <div key={index} className="flex items-center gap-3.5 p-4 bg-slate-50/80 rounded-2xl hover:bg-slate-100/50 transition">
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#fff3ef] text-[#e34b32]">
-                          <Check size={14} className="stroke-[3]" />
-                        </div>
-                        <span className="text-sm font-semibold text-slate-700">{item}</span>
+                  {property.highlights.map((item, index) => (
+                    <div key={index} className="flex items-center gap-3.5 p-4 bg-slate-50/80 rounded-2xl hover:bg-slate-100/50 transition">
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#fff3ef] text-[#e34b32]">
+                        <Check size={14} className="stroke-[3]" />
                       </div>
-                    ))
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-3.5 p-4 bg-slate-50/80 rounded-2xl hover:bg-slate-100/50 transition">
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#fff3ef] text-[#e34b32]">
-                          <Check size={14} className="stroke-[3]" />
-                        </div>
-                        <span className="text-sm font-semibold text-slate-700">Prime Sector 22A Location within fast developing district</span>
-                      </div>
-                      <div className="flex items-center gap-3.5 p-4 bg-slate-50/80 rounded-2xl hover:bg-slate-100/50 transition">
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#fff3ef] text-[#e34b32]">
-                          <Check size={14} className="stroke-[3]" />
-                        </div>
-                        <span className="text-sm font-semibold text-slate-700">Close to Jewar International Airport and local expressways</span>
-                      </div>
-                      <div className="flex items-center gap-3.5 p-4 bg-slate-50/80 rounded-2xl hover:bg-slate-100/50 transition">
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#fff3ef] text-[#e34b32]">
-                          <Check size={14} className="stroke-[3]" />
-                        </div>
-                        <span className="text-sm font-semibold text-slate-700">Low-Density Living surrounded by greenery layouts</span>
-                      </div>
-                    </>
-                  )}
+                      <span className="text-sm font-semibold text-slate-700">{item}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -767,88 +843,123 @@ export default function PropertyDetailClient({ property, related }: Props) {
                 </div>
 
                 {/* Subtabs inside Layout Plan */}
-                <div className="flex space-x-1.5 mb-6 p-1 bg-slate-100/70 rounded-full w-fit">
-                  <button
-                    onClick={() => setActiveLayoutSubTab("master")}
-                    className={`rounded-full px-4.5 py-2 text-xs font-extrabold transition ${
-                      activeLayoutSubTab === "master"
-                        ? "bg-white text-slate-900 shadow-sm"
-                        : "text-slate-600 hover:text-slate-900"
-                    }`}
-                  >
-                    Master Plan
-                  </button>
-                  {property.units && property.units.map((unit, uIdx) => (
-                    <button
-                      key={uIdx}
-                      onClick={() => setActiveLayoutSubTab(`unit-${uIdx}`)}
-                      className={`rounded-full px-4.5 py-2 text-xs font-extrabold transition ${
-                        activeLayoutSubTab === `unit-${uIdx}`
-                          ? "bg-white text-[#e34b32] shadow-sm"
-                          : "text-slate-600 hover:text-slate-950"
-                      }`}
-                    >
-                      {unit.unitType} ({formatPrice(unit.price)})
-                    </button>
-                  ))}
-                  {(!property.units || property.units.length === 0) && (
-                    <button
-                      onClick={() => setActiveLayoutSubTab("unit-default")}
-                      className={`rounded-full px-4.5 py-2 text-xs font-extrabold transition ${
-                        activeLayoutSubTab === "unit-default"
-                          ? "bg-white text-[#e34b32] shadow-sm"
-                          : "text-slate-600 hover:text-slate-950"
-                      }`}
-                    >
-                      3 BHK ({formatPrice(property.minPrice)})
-                    </button>
-                  )}
-                </div>
+                {layoutSubTabs.length > 0 && (
+                  <div className="flex space-x-1.5 mb-6 p-1 bg-slate-100/70 rounded-full w-fit">
+                    {layoutSubTabs.map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveLayoutSubTab(tab.id)}
+                        className={`rounded-full px-4.5 py-2 text-xs font-extrabold transition ${
+                          activeLayoutSubTab === tab.id
+                            ? "bg-white text-[#e34b32] shadow-sm"
+                            : "text-slate-600 hover:text-slate-900"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Interactive Diagram / Sketch Screen */}
                 <div className="relative w-full aspect-[16/10] bg-slate-50 rounded-2xl overflow-hidden border border-slate-100 flex items-center justify-center p-4">
                   {activeLayoutSubTab === "master" ? (
-                    <div className="relative w-full h-full">
-                      <Image 
-                        src="https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80" 
-                        alt="Master Site Layout"
-                        fill
-                        className="object-contain"
-                      />
-                      <div className="absolute top-3 left-3 bg-slate-900/80 text-white rounded px-2.5 py-1 text-[10px] font-black uppercase tracking-wider">
-                        Master Layout Map
-                      </div>
-                    </div>
+                    (() => {
+                      const masterPlanImg = property.images?.find(img => img.imageType === "MASTER_PLAN");
+                      if (masterPlanImg?.imageUrl) {
+                        return (
+                          <div className="relative w-full h-full">
+                            <Image 
+                              src={getAssetUrl(masterPlanImg.imageUrl) || ""} 
+                              alt="Master Site Layout"
+                              fill
+                              className="object-contain"
+                            />
+                            {masterPlanImg.caption && (
+                              <div className="absolute top-3 left-3 bg-slate-900/80 text-white rounded px-2.5 py-1 text-[10px] font-black uppercase tracking-wider">
+                                {masterPlanImg.caption}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                      return <div className="text-slate-400 text-sm font-semibold">No Master Plan image uploaded.</div>;
+                    })()
+                  ) : activeLayoutSubTab.startsWith("unit-") ? (
+                    (() => {
+                      const uIdx = parseInt(activeLayoutSubTab.replace("unit-", ""), 10);
+                      const unit = property.units?.[uIdx];
+                      if (!unit) return <div className="text-slate-400 text-sm font-semibold">Unit configuration not found.</div>;
+                      
+                      const unitImg = unit.images?.[0];
+                      if (unitImg?.imageUrl) {
+                        return (
+                          <div className="relative w-full h-full flex flex-col md:flex-row gap-6 items-center">
+                            <div className="relative flex-1 w-full h-full min-h-[200px]">
+                              <Image 
+                                src={getAssetUrl(unitImg.imageUrl) || ""} 
+                                alt={unitImg.caption || `${unit.unitType} Floor Plan`}
+                                fill
+                                className="object-contain"
+                              />
+                            </div>
+                            <div className="w-full md:w-56 text-xs text-slate-600 space-y-2 border-l border-slate-100 pl-4 shrink-0">
+                              <h4 className="font-display text-sm font-black text-slate-800">{unit.unitType} Specifications</h4>
+                              <div className="flex justify-between border-b border-slate-100 py-1.5">
+                                <span>Carpet Area</span>
+                                <span className="font-bold text-slate-800">{unit.carpetAreaSqft ? `${unit.carpetAreaSqft} Sq.ft.` : "N/A"}</span>
+                              </div>
+                              {unit.superAreaSqft && (
+                                <div className="flex justify-between border-b border-slate-100 py-1.5">
+                                  <span>Super Area</span>
+                                  <span className="font-bold text-slate-800">{unit.superAreaSqft} Sq.ft.</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between border-b border-slate-100 py-1.5">
+                                <span>Price</span>
+                                <span className="font-bold text-slate-800">{formatPrice(unit.price)}</span>
+                              </div>
+                              {unit.availableUnits !== null && unit.availableUnits !== undefined && (
+                                <div className="flex justify-between border-b border-slate-100 py-1.5">
+                                  <span>Available Units</span>
+                                  <span className="font-bold text-slate-800">{unit.availableUnits}</span>
+                                </div>
+                              )}
+                              {unitImg.caption && (
+                                <div className="pt-2 text-[10px] text-slate-400 font-semibold italic">
+                                  Note: {unitImg.caption}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div className="w-full max-w-md text-center p-6 bg-white rounded-2xl shadow-xs border border-slate-100">
+                          <h4 className="font-display text-lg font-black text-slate-800 mb-2">{unit.unitType}</h4>
+                          <div className="text-xs text-slate-600 space-y-2 max-w-xs mx-auto mb-4">
+                            <div className="flex justify-between border-b border-slate-100 py-1.5">
+                              <span>Carpet Area</span>
+                              <span className="font-bold text-slate-800">{unit.carpetAreaSqft ? `${unit.carpetAreaSqft} Sq.ft.` : "N/A"}</span>
+                            </div>
+                            {unit.superAreaSqft && (
+                              <div className="flex justify-between border-b border-slate-100 py-1.5">
+                                <span>Super Area</span>
+                                <span className="font-bold text-slate-800">{unit.superAreaSqft} Sq.ft.</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between border-b border-slate-100 py-1.5">
+                              <span>Price</span>
+                              <span className="font-bold text-slate-800">{formatPrice(unit.price)}</span>
+                            </div>
+                          </div>
+                          <div className="text-slate-400 text-xs font-semibold">No floor plan image uploaded for this unit layout.</div>
+                        </div>
+                      );
+                    })()
                   ) : (
-                    <div className="relative w-full h-full flex flex-col md:flex-row gap-6 items-center">
-                      <div className="relative flex-1 w-full h-full min-h-[200px]">
-                        <Image 
-                          src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80" 
-                          alt="Unit plan layout illustration"
-                          fill
-                          className="object-contain opacity-85"
-                        />
-                      </div>
-                      <div className="w-full md:w-56 text-xs text-slate-600 space-y-2 border-l border-slate-100 pl-4 shrink-0">
-                        <h4 className="font-display text-sm font-black text-slate-800">Unit Dimensions</h4>
-                        <div className="flex justify-between border-b border-slate-100 py-1.5">
-                          <span>Living Room</span>
-                          <span className="font-bold text-slate-800">14' x 16'</span>
-                        </div>
-                        <div className="flex justify-between border-b border-slate-100 py-1.5">
-                          <span>Master Bedroom</span>
-                          <span className="font-bold text-slate-800">12' x 14'</span>
-                        </div>
-                        <div className="flex justify-between border-b border-slate-100 py-1.5">
-                          <span>Balcony Size</span>
-                          <span className="font-bold text-slate-800">8' Wide</span>
-                        </div>
-                        <div className="flex justify-between border-b border-slate-100 py-1.5">
-                          <span>Kitchen Area</span>
-                          <span className="font-bold text-slate-800">9' x 11'</span>
-                        </div>
-                      </div>
-                    </div>
+                    <div className="text-slate-400 text-sm font-semibold">Please select a layout plan sub-tab.</div>
                   )}
                 </div>
               </div>
@@ -1000,72 +1111,43 @@ export default function PropertyDetailClient({ property, related }: Props) {
             )}
 
             {/* 3.5 AMENITIES TAB */}
-            {activeTab === "amenities" && (
+            {activeTab === "amenities" && property.amenities && property.amenities.length > 0 && (
               <div className="rounded-[2rem] bg-white p-7 premium-border shadow-xs animate-fade-in">
                 <h2 className="font-display text-2xl font-black text-[#111111] mb-6">Amenities</h2>
                 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {(property.amenities && property.amenities.length > 0) ? (
-                    property.amenities.map((item, idx) => (
-                      <div key={idx} className="flex flex-col p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:shadow-xs transition">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff3ef] text-[#e34b32] mb-3">
-                          {item.toLowerCase().includes("wifi") ? <Wifi size={18} /> : 
-                           item.toLowerCase().includes("water") ? <Compass size={18} /> : 
-                           item.toLowerCase().includes("electricity") ? <Zap size={18} /> : 
-                           <CheckCircle2 size={18} />}
-                        </div>
-                        <span className="text-sm font-bold text-slate-800">{item}</span>
+                  {property.amenities.map((item, idx) => (
+                    <div key={idx} className="flex flex-col p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:shadow-xs transition">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff3ef] text-[#e34b32] mb-3">
+                        {item.toLowerCase().includes("wifi") ? <Wifi size={18} /> : 
+                         item.toLowerCase().includes("water") ? <Compass size={18} /> : 
+                         item.toLowerCase().includes("electricity") ? <Zap size={18} /> : 
+                         <CheckCircle2 size={18} />}
                       </div>
-                    ))
-                  ) : (
-                    <>
-                      {["Water Supply", "24x7 Power Backup", "Clubhouse Gym", "Swimming Pool", "Wi-Fi Hubs", "24/7 Gate Patrol"].map((item, idx) => (
-                        <div key={idx} className="flex flex-col p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:shadow-xs transition">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#fff3ef] text-[#e34b32] mb-3">
-                            {idx === 0 ? <Compass size={18} /> : 
-                             idx === 1 ? <Zap size={18} /> : 
-                             idx === 2 ? <Building2 size={18} /> : 
-                             idx === 4 ? <Wifi size={18} /> : 
-                             <CheckCircle2 size={18} />}
-                          </div>
-                          <span className="text-sm font-bold text-slate-800">{item}</span>
-                        </div>
-                      ))}
-                    </>
-                  )}
+                      <span className="text-sm font-bold text-slate-800">{item}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
 
             {/* 3.6 SPECIFICATIONS TAB */}
-            {activeTab === "specifications" && (
+            {activeTab === "specifications" && property.specifications && property.specifications.length > 0 && (
               <div className="rounded-[2rem] bg-white p-7 premium-border shadow-xs animate-fade-in">
                 <h2 className="font-display text-2xl font-black text-[#111111] mb-6">Specifications</h2>
                 
                 <div className="space-y-4">
-                  {(property.specifications && property.specifications.length > 0) ? (
-                    property.specifications.map((item, idx) => (
+                  {property.specifications.map((item, idx) => {
+                    const parts = item.split(":");
+                    const title = parts[0]?.trim();
+                    const desc = parts.slice(1).join(":")?.trim() || "Premium design selection as standard fitment";
+                    return (
                       <div key={idx} className="grid grid-cols-[120px_1fr] gap-4 p-4 border-b border-slate-100 last:border-b-0 items-start">
-                        <span className="text-xs font-black uppercase tracking-wider text-slate-400 pt-0.5">{item}</span>
-                        <span className="text-sm font-bold text-slate-700">Premium design selection as standard fitment</span>
+                        <span className="text-xs font-black uppercase tracking-wider text-slate-400 pt-0.5">{title}</span>
+                        <span className="text-sm font-bold text-slate-700">{desc}</span>
                       </div>
-                    ))
-                  ) : (
-                    <>
-                      {[
-                        { title: "Flooring", desc: "Vitrified tiles in living rooms & anti-skid premium floorings in balconies" },
-                        { title: "Windows/Doors", desc: "Hardwood frames with flush shutters and sliding UPVC windows" },
-                        { title: "Kitchen", desc: "Granite platform workbench with premium sink fittings and vitrified backsplashes" },
-                        { title: "Electrical", desc: "Concealed copper wiring with modular switches and points for A/C systems" },
-                        { title: "Bathrooms", desc: "Branded sanitary fixtures, chrome-plated fittings and ceramic dado panels" }
-                      ].map((item, idx) => (
-                        <div key={idx} className="grid grid-cols-[120px_1fr] gap-4 p-4 border-b border-slate-100 last:border-b-0 items-start">
-                          <span className="text-xs font-black uppercase tracking-wider text-slate-400 pt-0.5">{item.title}</span>
-                          <span className="text-sm font-bold text-slate-700">{item.desc}</span>
-                        </div>
-                      ))}
-                    </>
-                  )}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1075,7 +1157,7 @@ export default function PropertyDetailClient({ property, related }: Props) {
               <div className="rounded-[2rem] bg-white p-7 premium-border shadow-xs animate-fade-in">
                 <h2 className="font-display text-2xl font-black text-[#111111] mb-2">Location</h2>
                 <p className="text-sm font-semibold text-slate-600 mb-6">
-                  {property.address || "Sector - 22A, YEIDA, Greater Noida, Uttar Pradesh"}
+                  {property.address || `${property.locality ? `${property.locality}, ` : ""}${property.city || ""}`}
                 </p>
 
                 {/* Mock Map View Card */}
@@ -1087,7 +1169,7 @@ export default function PropertyDetailClient({ property, related }: Props) {
                     </div>
                     <h4 className="text-sm font-black text-slate-800">Map View Location</h4>
                     <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                      Coordinates: Latitude {property.latitude ? "Defined" : "28.30"}, Longitude {property.longitude ? "Defined" : "77.40"}
+                      Coordinates: {property.latitude && property.longitude ? `Latitude ${Number(property.latitude).toFixed(4)}, Longitude ${Number(property.longitude).toFixed(4)}` : "Coordinates on request"}
                     </p>
                     <button className="mt-4 rounded-full bg-[#e34b32] text-white px-5 py-2.5 text-xs font-extrabold shadow-xs hover:bg-[#d9462e] transition">
                       Get Directions
@@ -1098,15 +1180,15 @@ export default function PropertyDetailClient({ property, related }: Props) {
             )}
 
             {/* 3.8 DEVELOPER TAB */}
-            {activeTab === "developer" && (
+            {activeTab === "developer" && property.developer && (
               <div className="rounded-[2rem] bg-white p-7 premium-border shadow-xs animate-fade-in">
                 <div className="flex items-center gap-4 border-b border-slate-100 pb-5 mb-6">
                   <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#fff3ef] font-black text-2xl text-[#df432c] border border-orange-100 shrink-0">
-                    {initials(property.developer?.companyName)}
+                    {initials(property.developer.companyName)}
                   </span>
                   <div>
                     <h2 className="font-display text-2xl font-black text-[#111111]">
-                      {property.developer?.companyName || "Godrej Properties"}
+                      {property.developer.companyName}
                     </h2>
                     <p className="text-xs font-bold text-slate-500 mt-1">Partnership status: Active Developer Club Member</p>
                   </div>
@@ -1114,25 +1196,27 @@ export default function PropertyDetailClient({ property, related }: Props) {
 
                 <div className="space-y-4 text-sm">
                   <p className="text-slate-600 leading-relaxed">
-                    This premium property builder is audited, registered, and verified directly under state real estate authorities (RERA). Collaborations guarantee direct price bidding channels for Together Buying club users.
+                    {property.developer.description || "This premium property builder is audited, registered, and verified directly under state real estate authorities (RERA). Collaborations guarantee direct price bidding channels for Together Buying club users."}
                   </p>
                   
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 pt-4">
                     <div className="p-3 bg-slate-50 rounded-xl">
                       <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Headquarters</span>
-                      <strong className="block text-slate-700 text-xs mt-1">Delhi NCR, India</strong>
+                      <strong className="block text-slate-700 text-xs mt-1">{property.developer.headquartersCity || "N/A"}</strong>
                     </div>
                     <div className="p-3 bg-slate-50 rounded-xl">
-                      <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Active Projects</span>
-                      <strong className="block text-slate-700 text-xs mt-1">12 NCR Developments</strong>
+                      <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">Established Year</span>
+                      <strong className="block text-slate-700 text-xs mt-1">{property.developer.establishedYear || "N/A"}</strong>
                     </div>
                     <div className="p-3 bg-slate-50 rounded-xl">
                       <span className="block text-[10px] font-black uppercase tracking-wider text-slate-400">RERA Certified</span>
-                      <strong className="block text-emerald-600 text-xs mt-1">Fully Approved</strong>
+                      <strong className={`block text-xs mt-1 ${property.developer.reraRegistered ? "text-emerald-600" : "text-slate-500"}`}>
+                        {property.developer.reraRegistered ? "Yes, Registered" : "No / On Request"}
+                      </strong>
                     </div>
                   </div>
 
-                  {property.developer?.slug && (
+                  {property.developer.slug && (
                     <div className="pt-4 text-center">
                       <ButtonLink href={`/developers/${property.developer.slug}`} variant="secondary" className="w-full md:w-auto">
                         View Developer Profile
@@ -1183,7 +1267,7 @@ export default function PropertyDetailClient({ property, related }: Props) {
               <h3 className="font-display text-lg font-black text-slate-900 leading-snug text-center">
                 Hi, I am here to Answer all your queries.
               </h3>
-
+ 
               {/* RM Profile Portrait */}
               <div className="flex items-center gap-3.5 mt-5 p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
                 <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 border border-slate-200">
@@ -1195,15 +1279,15 @@ export default function PropertyDetailClient({ property, related }: Props) {
                   />
                 </div>
                 <div>
-                  <h4 className="text-sm font-black text-slate-800">Shweta Sharma</h4>
+                  <h4 className="text-sm font-black text-slate-800">{rmName}</h4>
                   <p className="text-[10px] font-bold text-slate-400 mt-0.5">Senior Relationship Manager</p>
                 </div>
               </div>
-
+ 
               {/* Contact Call to actions */}
               <div className="grid gap-2.5 mt-5">
                 <a 
-                  href="https://wa.me/919999999999?text=Hi,%20I'm%20interested%20in%20the%20property%20detail%20page"
+                  href={`https://wa.me/91${rmPhone.replace(/[^0-9]/g, "")}?text=Hi,%20I'm%20interested%20in%20${encodeURIComponent(property.title)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 rounded-full border border-[#e34b32]/20 text-[#e34b32] bg-[#fff3ef]/40 hover:bg-[#fff3ef] py-3 text-xs font-black uppercase tracking-wider transition text-center"
@@ -1213,7 +1297,7 @@ export default function PropertyDetailClient({ property, related }: Props) {
                 </a>
                 
                 <a 
-                  href="tel:+919999999999"
+                  href={`tel:+91${rmPhone.replace(/[^0-9]/g, "")}`}
                   className="flex items-center justify-center gap-2 rounded-full bg-[#111111] text-white hover:bg-slate-900 py-3 text-xs font-black uppercase tracking-wider transition text-center"
                 >
                   <Phone size={14} />
