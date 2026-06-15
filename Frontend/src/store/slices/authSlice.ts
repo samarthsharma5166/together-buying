@@ -8,6 +8,12 @@ export interface User {
   email: string;
   phone: string;
   role: "USER" | "BUYER_PREMIUM" | "RM" | "ADMIN" | "SUPER_ADMIN";
+  subscriptions?: Array<{
+    id: string;
+    status: "ACTIVE" | "INACTIVE";
+    expiresAt: string | null;
+    createdAt: string;
+  }>;
 }
 
 interface AuthState {

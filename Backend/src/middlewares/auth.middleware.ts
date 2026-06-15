@@ -13,6 +13,12 @@ export interface AuthenticatedRequest extends Request {
     role: string;
     firstName: string;
     lastName: string;
+    subscriptions?: Array<{
+      id: string;
+      status: string;
+      expiresAt: Date | null;
+      createdAt: Date;
+    }>;
   };
 }
 
@@ -45,6 +51,15 @@ export const isAuthenticated = tryCatch(async (req: AuthenticatedRequest, res: R
       role: true,
       firstName: true,
       lastName: true,
+      subscriptions: {
+        where: {
+          status: "ACTIVE",
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 1,
+      },
     },
   });
   if (!user) {

@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchCurrentUser } from "@/store/slices/authSlice";
@@ -57,6 +56,15 @@ export default function SubscribePage() {
   const handlePurchase = async (planId: string) => {
     if (!user) {
       router.push(`/login?redirect=/subscribe`);
+      return;
+    }
+
+    if (user.role === "BUYER_PREMIUM") {
+      setError("You are already a premium member");
+      return;
+    }
+    if (user.role === "ADMIN" || user.role === "RM" || user.role === "SUPER_ADMIN") {
+      setError("You are not authorized to purchase a subscription");
       return;
     }
 

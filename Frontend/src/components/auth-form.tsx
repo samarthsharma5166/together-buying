@@ -49,7 +49,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         }, 1500);
       }
     } catch (error: any) {
-      setMessage(error?.message || "Something went wrong");
+      alert(JSON.stringify(error))
+      setMessage(error || "Something went wrong");
     } finally {
       setSubmitting(false);
     }

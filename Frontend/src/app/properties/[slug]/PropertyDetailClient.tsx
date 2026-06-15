@@ -34,11 +34,12 @@ import {
 } from "lucide-react";
 import { Button, ButtonLink } from "@/components/button";
 import { formatPrice, initials } from "@/lib/utils";
-import { getAssetUrl, adminListSubscriptionPlans, type SubscriptionPlan, type Property, type PropertyUnit, type PropertyImage } from "@/lib/api";
+import { getAssetUrl, adminListSubscriptionPlans, type SubscriptionPlan, type Property, type PropertyUnit, type PropertyImage, joinGroup, leaveGroup, getGroupMembershipStatus } from "@/lib/api";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { useRouter } from "next/navigation";
 import { fetchCurrentUser } from "@/store/slices/authSlice";
 import { payWithRazorpay } from "@/lib/razorpay";
+import { openSubscriptionModal } from "@/store/slices/subscriptionSlice";
 
 
 type Props = {
@@ -70,7 +71,33 @@ export default function PropertyDetailClient({ property, related }: Props) {
   const [payingPlanId, setPayingPlanId] = useState<string | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
 
-  const isPremium = !!(user && (user.role === "BUYER_PREMIUM" || user.role === "RM" || user.role === "ADMIN" || user.role === "SUPER_ADMIN")) && !property.isLockedPlaceholder;
+  const hasActiveSubscription = useMemo(() => {
+    if (!user) return false;
+    if (user.role === "ADMIN" || user.role === "SUPER_ADMIN" || user.role === "RM") {
+      return true;
+    }
+    if (user.role !== "BUYER_PREMIUM") {
+      return false;
+    }
+    const activeSub = user.subscriptions?.find(sub => sub.status === "ACTIVE");
+    if (!activeSub) return false;
+    if (activeSub.expiresAt && new Date(activeSub.expiresAt) < new Date()) {
+      return false;
+    }
+    return true;
+  }, [user]);
+
+  const isPremium = hasActiveSubscription && !property.isLockedPlaceholder;
+
+  const hasExpiredSubscription = useMemo(() => {
+    if (!user || user.role !== "BUYER_PREMIUM") return false;
+    const activeSub = user.subscriptions?.find(sub => sub.status === "ACTIVE");
+    if (!activeSub) return true;
+    if (activeSub.expiresAt && new Date(activeSub.expiresAt) < new Date()) {
+      return true;
+    }
+    return false;
+  }, [user]);
 
   // Protect detail page from unauthenticated users
   useEffect(() => {
@@ -81,11 +108,10 @@ export default function PropertyDetailClient({ property, related }: Props) {
 
   // Automatically trigger server component refresh to fetch full details once user upgrades to premium
   useEffect(() => {
-    const hasPremiumRole = !!(user && (user.role === "BUYER_PREMIUM" || user.role === "RM" || user.role === "ADMIN" || user.role === "SUPER_ADMIN"));
-    if (hasPremiumRole && property.isLockedPlaceholder) {
+    if (hasActiveSubscription && property.isLockedPlaceholder) {
       router.refresh();
     }
-  }, [user, property.isLockedPlaceholder, router]);
+  }, [hasActiveSubscription, property.isLockedPlaceholder, router]);
 
   // Fetch plans if the logged-in user is not premium
   useEffect(() => {
@@ -158,9 +184,89 @@ export default function PropertyDetailClient({ property, related }: Props) {
   const [copied, setCopied] = useState(false);
 
   // 2. Group Buying State
+  const group = property.groups?.[0];
   const [joinedGroup, setJoinedGroup] = useState(false);
+  const [currentGroupId, setCurrentGroupId] = useState<string | null>(null);
+  const [groupMembersCount, setGroupMembersCount] = useState(group?.current_members || 0);
+  const [groupLoading, setGroupLoading] = useState(false);
+  const [groupError, setGroupError] = useState<string | null>(null);
+
   const mockBaseMembers = property.totalUnits ? Math.floor(property.totalUnits * 0.08) : 24;
-  const membersCount = mockBaseMembers + (joinedGroup ? 1 : 0);
+  const membersCount = group ? groupMembersCount : mockBaseMembers + (joinedGroup ? 1 : 0);
+
+  // Load membership status
+  useEffect(() => {
+    if (user && group?.id) {
+      setGroupLoading(true);
+      getGroupMembershipStatus(group.id)
+        .then((res) => {
+          setJoinedGroup(res.joined);
+          setCurrentGroupId(res.currentGroupId);
+        })
+        .catch((err) => {
+          console.error("Failed to fetch membership status", err);
+        })
+        .finally(() => {
+          setGroupLoading(false);
+        });
+    }
+  }, [user, group?.id]);
+
+  const handleGroupAction = async () => {
+    if (!user) {
+      router.push(`/login?redirect=/properties/${property.slug || property.id}`);
+      return;
+    }
+
+    if (!group?.id) {
+      setGroupError("No active buying group is available for this property.");
+      return;
+    }
+
+    setGroupLoading(true);
+    setGroupError(null);
+
+    try {
+      if (joinedGroup) {
+        // Leave group
+        const res = await leaveGroup(group.id);
+        setJoinedGroup(false);
+        setCurrentGroupId(null);
+        setGroupMembersCount(res.data?.currentMembers ?? Math.max(0, groupMembersCount - 1));
+      } else {
+        // Check if premium status is expired or not subscribed
+        const isBuyerPremium = user.role === "BUYER_PREMIUM";
+        const hasActiveSub = user.subscriptions?.some(sub => sub.status === "ACTIVE" && (!sub.expiresAt || new Date(sub.expiresAt) > new Date()));
+        
+        const isStaff = user.role === "RM" || user.role === "ADMIN" || user.role === "SUPER_ADMIN";
+        
+        if (!isStaff && (!isBuyerPremium || !hasActiveSub)) {
+          setGroupError("An active premium subscription is required to join a group.");
+          router.push("/subscribe");
+          setGroupLoading(false);
+          return;
+        }
+
+        // Check if user is in another group
+        if (currentGroupId && currentGroupId !== group.id) {
+          setGroupError("You are already a member of another group. Please leave that group first before joining a new one.");
+          setGroupLoading(false);
+          return;
+        }
+
+        // Join group
+        const res = await joinGroup(group.id);
+        setJoinedGroup(true);
+        setCurrentGroupId(group.id);
+        setGroupMembersCount(res.data?.currentMembers ?? (groupMembersCount + 1));
+      }
+    } catch (err: any) {
+      console.error("Group action failed:", err);
+      setGroupError(err.message || "An error occurred while updating group membership.");
+    } finally {
+      setGroupLoading(false);
+    }
+  };
 
   // 3. Tab State
   const tabs = useMemo(() => {
@@ -520,6 +626,28 @@ export default function PropertyDetailClient({ property, related }: Props) {
         </div>
 
         {/* Section 2: Group Buying Status & Campaign Board */}
+        {hasExpiredSubscription && (
+          <div className="mb-6 flex flex-col md:flex-row items-center justify-between gap-4 rounded-[2rem] bg-amber-50 border border-amber-200 p-6 shadow-sm animate-fade-in text-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                <AlertCircle size={22} className="stroke-[2.5]" />
+              </div>
+              <div className="text-left">
+                <h4 className="font-display text-sm font-black text-amber-900">Your Premium Membership has Expired</h4>
+                <p className="text-xs font-semibold text-amber-700 mt-0.5">
+                  Renew your plan to maintain access to gated property details, RM support, and group buying clubs.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => router.push("/subscribe")}
+              className="shrink-0 rounded-full bg-amber-600 text-white px-5 py-2.5 text-xs font-extrabold hover:bg-amber-700 transition shadow-md shadow-amber-200"
+            >
+              Renew Membership
+            </button>
+          </div>
+        )}
+
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-[1.1fr_.9fr] mb-12">
           {/* Left Box: Active Group Buyers Count Widget */}
           <div className="rounded-[2.2rem] bg-[#f9fafb] p-6 lg:p-8 premium-border flex flex-col md:flex-row items-center gap-6 lg:gap-8 shadow-xs">
@@ -541,14 +669,20 @@ export default function PropertyDetailClient({ property, related }: Props) {
               </p>
 
               <button
-                onClick={() => setJoinedGroup(!joinedGroup)}
+                onClick={handleGroupAction}
+                disabled={groupLoading}
                 className={`mt-2 flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-extrabold transition-all duration-300 w-full md:w-auto shadow-md ${
                   joinedGroup 
                     ? "bg-emerald-600 text-white shadow-emerald-200 hover:bg-emerald-700" 
                     : "bg-[#e34b32] text-white shadow-orange-100 hover:bg-[#d9462e] hover:scale-[1.02]"
-                }`}
+                } disabled:opacity-75 disabled:scale-100`}
               >
-                {joinedGroup ? (
+                {groupLoading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+                    <span>Processing...</span>
+                  </span>
+                ) : joinedGroup ? (
                   <>
                     <UserCheck size={16} />
                     <span>Joined Group ✓</span>
@@ -560,6 +694,13 @@ export default function PropertyDetailClient({ property, related }: Props) {
                   </>
                 )}
               </button>
+
+              {groupError && (
+                <div className="mt-3 flex items-start gap-2 rounded-xl bg-red-50 border border-red-200 p-3 text-red-600 text-xs text-left max-w-[280px]">
+                  <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                  <span>{groupError}</span>
+                </div>
+              )}
             </div>
 
             {/* Divider */}
@@ -577,10 +718,18 @@ export default function PropertyDetailClient({ property, related }: Props) {
                     We will notify you as soon as developer discount tiers are unlocked.
                   </p>
                 </div>
+              ) : membersCount > 0 ? (
+                <div>
+                  <p className="text-slate-400 font-display text-sm font-bold">Group Status</p>
+                  <h4 className="mt-2 font-display text-lg font-black text-slate-800">Campaign Forming</h4>
+                  <p className="mt-1 text-xs text-slate-500 max-w-[200px] mx-auto">
+                    Join this active buyer group and lock in direct discount pricing.
+                  </p>
+                </div>
               ) : (
                 <div>
                   <p className="text-slate-400 font-display text-sm font-bold">Group Status</p>
-                  <h4 className="mt-2 font-display text-lg font-black text-slate-800">No Members Have Joined Yet</h4>
+                  <h4 className="mt-2 font-display text-lg font-black text-slate-800">No Members Yet</h4>
                   <p className="mt-1 text-xs text-slate-500 max-w-[200px] mx-auto">
                     Be the first buyer to initiate group buying on this premium property.
                   </p>

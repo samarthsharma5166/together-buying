@@ -66,7 +66,18 @@ export const login = tryCatch(async (req: Request, res: Response, next: NextFunc
         ...(email ? [{ email }] : []),
         ...(phone ? [{ phone }] : [])
       ]
-    }
+    },
+    include: {
+      subscriptions: {
+        where: {
+          status: "ACTIVE",
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 1,
+      },
+    },
   });
 
   if (!user) {
@@ -101,6 +112,7 @@ export const login = tryCatch(async (req: Request, res: Response, next: NextFunc
       email: user.email,
       phone: user.phone,
       role: user.role,
+      subscriptions: user.subscriptions,
     },
   });
 });

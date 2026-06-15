@@ -289,3 +289,189 @@ export const getAssignedProperties = tryCatch(async (req: AuthenticatedRequest, 
     data: serializeBigInt(properties),
   });
 });
+
+/**
+ * @desc Join a property group
+ * @route POST /api/groups/:groupId/join
+ * @access Authenticated (BUYER_PREMIUM, RM, ADMIN, SUPER_ADMIN)
+ */
+export const joinGroup = tryCatch(async (req: AuthenticatedRequest, res: Response) => {
+  const { groupId } = req.params as { groupId: string };
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw new AppError("User information missing from request context", 401);
+  }
+
+  // 1. Verify group exists
+  const group = await prisma.propertyGroup.findUnique({
+    where: { id: groupId },
+  });
+  if (!group) {
+    throw new AppError("Property group not found", 404);
+  }
+
+  // 1.5. Validate subscription status and expiry for regular premium buyers
+  const isStaffOrAdmin = req.user?.role === "RM" || req.user?.role === "ADMIN" || req.user?.role === "SUPER_ADMIN";
+  if (!isStaffOrAdmin) {
+    const activeSubscription = await prisma.subscription.findFirst({
+      where: {
+        userId,
+        status: "ACTIVE",
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    if (!activeSubscription) {
+      throw new AppError("An active premium subscription is required to join a group.", 403);
+    }
+
+    if (activeSubscription.expiresAt && new Date(activeSubscription.expiresAt) < new Date()) {
+      throw new AppError("Your premium subscription has expired. Please renew your plan.", 403);
+    }
+  }
+
+  // 2. Check if user is already in any group (due to userId unique constraint)
+  const existingMembership = await prisma.groupMembers.findUnique({
+    where: { userId },
+    include: {
+      group: {
+        select: {
+          id: true,
+          name: true,
+        }
+      }
+    }
+  });
+
+  if (existingMembership) {
+    if (existingMembership.groupId === groupId) {
+      throw new AppError("You are already a member of this property group", 400);
+    }
+    throw new AppError(
+      `You are already a member of another group: "${existingMembership.group.name}". Please leave that group first before joining a new one.`,
+      409
+    );
+  }
+
+  // 3. Create group membership and increment current_members in a transaction
+  const result = await prisma.$transaction(async (tx) => {
+    // Create member record
+    const member = await tx.groupMembers.create({
+      data: {
+        groupId,
+        userId,
+      },
+    });
+
+    // Increment count on group
+    const updatedGroup = await tx.propertyGroup.update({
+      where: { id: groupId },
+      data: {
+        current_members: {
+          increment: 1,
+        },
+      },
+    });
+
+    return { member, updatedGroup };
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "Successfully joined the group",
+    data: {
+      member: result.member,
+      currentMembers: result.updatedGroup.current_members,
+    },
+  });
+});
+
+/**
+ * @desc Leave a property group
+ * @route POST /api/groups/:groupId/leave
+ * @access Authenticated (BUYER_PREMIUM, RM, ADMIN, SUPER_ADMIN)
+ */
+export const leaveGroup = tryCatch(async (req: AuthenticatedRequest, res: Response) => {
+  const { groupId } = req.params as { groupId: string };
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw new AppError("User information missing from request context", 401);
+  }
+
+  // 1. Verify group exists
+  const group = await prisma.propertyGroup.findUnique({
+    where: { id: groupId },
+  });
+  if (!group) {
+    throw new AppError("Property group not found", 404);
+  }
+
+  // 2. Verify membership exists
+  const membership = await prisma.groupMembers.findUnique({
+    where: { userId },
+  });
+
+  if (!membership || membership.groupId !== groupId) {
+    throw new AppError("You are not a member of this property group", 400);
+  }
+
+  // 3. Remove group membership and decrement current_members in a transaction
+  const result = await prisma.$transaction(async (tx) => {
+    // Delete membership
+    await tx.groupMembers.delete({
+      where: { userId },
+    });
+
+    // Decrement count on group
+    const updatedGroup = await tx.propertyGroup.update({
+      where: { id: groupId },
+      data: {
+        current_members: {
+          decrement: 1,
+        },
+      },
+    });
+
+    return { updatedGroup };
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "Successfully left the group",
+    data: {
+      currentMembers: result.updatedGroup.current_members,
+    },
+  });
+});
+
+/**
+ * @desc Get group membership status for the current user
+ * @route GET /api/groups/:groupId/membership-status
+ * @access Authenticated
+ */
+export const getGroupMembershipStatus = tryCatch(async (req: AuthenticatedRequest, res: Response) => {
+  const { groupId } = req.params as { groupId: string };
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw new AppError("User information missing from request context", 401);
+  }
+
+  const membership = await prisma.groupMembers.findUnique({
+    where: { userId },
+  });
+
+  const isMember = !!(membership && membership.groupId === groupId);
+
+  return res.status(200).json({
+    success: true,
+    data: {
+      joined: isMember,
+      currentGroupId: membership?.groupId || null,
+    },
+  });
+});

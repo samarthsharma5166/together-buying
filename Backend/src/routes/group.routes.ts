@@ -7,14 +7,24 @@ import {
   deleteGroup,
   listRMs,
   getUnassignedProperties,
-  getAssignedProperties
+  getAssignedProperties,
+  joinGroup,
+  leaveGroup,
+  getGroupMembershipStatus
 } from "../controllers/group.controllers.js";
 import { isAuthenticated, authorizedRoles } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 
-// Apply auth middleware to all group management routes
+// Apply authentication middleware to all routes
 router.use(isAuthenticated);
+
+// Group membership routes (accessible by premium/admin users)
+router.post("/:groupId/join", authorizedRoles("BUYER_PREMIUM", "RM", "ADMIN", "SUPER_ADMIN"), joinGroup);
+router.post("/:groupId/leave", authorizedRoles("BUYER_PREMIUM", "RM", "ADMIN", "SUPER_ADMIN"), leaveGroup);
+router.get("/:groupId/membership-status", getGroupMembershipStatus);
+
+// Apply admin role gating to administrative management routes
 router.use(authorizedRoles("ADMIN", "SUPER_ADMIN"));
 
 router.get("/", listGroups);

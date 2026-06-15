@@ -483,6 +483,30 @@ export async function adminDeletePropertyUnitImage(imageId: string): Promise<boo
   return response.data?.success || false;
 }
 
+export async function joinGroup(groupId: string): Promise<any> {
+  const response = await api.post(`/groups/${groupId}/join`);
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to join group");
+  }
+  return response.data;
+}
+
+export async function leaveGroup(groupId: string): Promise<any> {
+  const response = await api.post(`/groups/${groupId}/leave`);
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to leave group");
+  }
+  return response.data;
+}
+
+export async function getGroupMembershipStatus(groupId: string): Promise<any> {
+  const response = await api.get(`/groups/${groupId}/membership-status`);
+  if (!response.data?.success) {
+    throw new Error(response.data?.message || "Failed to fetch membership status");
+  }
+  return response.data.data;
+}
+
 
 
 

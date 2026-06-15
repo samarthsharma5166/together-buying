@@ -6,6 +6,22 @@ import type { AuthenticatedRequest } from "../middlewares/auth.middleware.js";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 
+function calculateExpiryDate(type: "MONTHLY" | "QUARTERLY" | "YEARLY" | "LIFE_TIME"): Date {
+  const now = new Date();
+  switch (type) {
+    case "MONTHLY":
+      return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    case "QUARTERLY":
+      return new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+    case "YEARLY":
+      return new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+    case "LIFE_TIME":
+      return new Date(now.getTime() + 100 * 365 * 24 * 60 * 60 * 1000);
+    default:
+      return new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  }
+}
+
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_mockkeyid1234",
   key_secret: process.env.RAZORPAY_KEY_SECRET || "rzp_test_mocksecret1234",
@@ -154,6 +170,8 @@ export const handleWebhook = tryCatch(async (req: Request, res: Response) => {
           userId,
           amount: plan.price,
           status: "ACTIVE",
+          planId: plan.id,
+          expiresAt: calculateExpiryDate(plan.type),
         },
       });
 
@@ -225,6 +243,8 @@ export const mockCompleteSubscription = tryCatch(async (req: AuthenticatedReques
         userId,
         amount: plan.price,
         status: "ACTIVE",
+        planId: plan.id,
+        expiresAt: calculateExpiryDate(plan.type),
       },
     });
 
@@ -306,6 +326,8 @@ export const verifySubscriptionPayment = tryCatch(async (req: AuthenticatedReque
         userId,
         amount: plan.price,
         status: "ACTIVE",
+        planId: plan.id,
+        expiresAt: calculateExpiryDate(plan.type),
       },
     });
 
