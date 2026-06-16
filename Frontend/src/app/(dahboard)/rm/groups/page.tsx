@@ -16,26 +16,52 @@ import {
   CheckCircle, 
   Clock, 
   XCircle,
-  Compass,
-  ArrowUpRight
+  Compass
 } from "lucide-react";
-import Link from "next/link";
 
 export default function RMGroupsPage() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
-  const { rmGroups, rmLoading, rmError } = useAppSelector((state) => state.group);
+  const { rmGroups, rmLoading, rmError, rmMeta } = useAppSelector((state) => state.group);
 
+  const totalPages = rmMeta?.totalPages || 0;
+  const page = rmMeta?.page || 1;
+  const limit = rmMeta?.limit || 10;
+  const total = rmMeta?.total || 0;
+
+  const [inputValue, setInputValue] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   const [expandedGroupId, setExpandedGroupId] = useState<string | null>(null);
 
-  // Fetch groups on mount
+  // Debounce search query changes
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchQuery(inputValue);
+      setCurrentPage(1); // Reset to first page on search
+    }, 500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [inputValue]);
+
+  // Fetch groups when query dependencies change
   useEffect(() => {
     if (user) {
-      dispatch(fetchRmGroups());
+      dispatch(
+        fetchRmGroups({
+          search: searchQuery,
+          status: statusFilter,
+          page: currentPage,
+          limit: itemsPerPage,
+        })
+      );
     }
-  }, [user, dispatch]);
+  }, [user, searchQuery, statusFilter, currentPage, dispatch]);
 
   const toggleExpand = (groupId: string) => {
     if (expandedGroupId === groupId) {
@@ -45,18 +71,10 @@ export default function RMGroupsPage() {
     }
   };
 
-  // Filter and search logic
-  const filteredGroups = rmGroups.filter((group) => {
-    const matchesSearch = 
-      group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (group.property?.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (group.property?.city || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (group.property?.locality || "").toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesStatus = statusFilter === "ALL" || group.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
+  const handleStatusChange = (newStatus: string) => {
+    setStatusFilter(newStatus);
+    setCurrentPage(1); // Reset to first page on status change
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -124,8 +142,8 @@ export default function RMGroupsPage() {
           <input
             type="text"
             placeholder="Search by group name, property, or location..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
             className="w-full rounded-2xl border border-slate-100 bg-slate-50/50 py-3 pl-11 pr-4 text-sm font-semibold text-slate-800 placeholder-slate-400 outline-none transition-all hover:border-slate-200 focus:border-[#e34b32] focus:bg-white"
           />
         </div>
@@ -135,7 +153,7 @@ export default function RMGroupsPage() {
           <Filter className="h-4 w-4 text-slate-400 shrink-0" />
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => handleStatusChange(e.target.value)}
             className="w-full appearance-none rounded-2xl border border-slate-100 bg-slate-50/50 py-3 px-4 text-sm font-semibold text-slate-800 outline-none transition-all hover:border-slate-200 focus:border-[#e34b32] focus:bg-white cursor-pointer"
           >
             <option value="ALL">All Statuses</option>
@@ -161,7 +179,7 @@ export default function RMGroupsPage() {
           <div className="rounded-[2rem] border border-red-100 bg-red-50/30 p-8 text-center text-red-600 font-semibold text-sm">
             {rmError}
           </div>
-        ) : filteredGroups.length === 0 ? (
+        ) : rmGroups.length === 0 ? (
           <div className="rounded-[2.5rem] border-2 border-dashed border-slate-200 bg-white py-16 px-6 text-center flex flex-col items-center justify-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-50 text-slate-400">
               <Users size={32} />
@@ -169,7 +187,7 @@ export default function RMGroupsPage() {
             <div>
               <h3 className="font-display text-lg font-black text-slate-800">No Groups Found</h3>
               <p className="text-sm text-slate-400 mt-1">
-                {searchQuery || statusFilter !== "ALL"
+                {inputValue || statusFilter !== "ALL"
                   ? "Try adjusting your search query or status filter criteria."
                   : "You don't have any groups assigned to you yet."}
               </p>
@@ -177,7 +195,7 @@ export default function RMGroupsPage() {
           </div>
         ) : (
           <div className="grid gap-6">
-            {filteredGroups.map((group) => {
+            {rmGroups.map((group) => {
               const progress = Math.min(
                 100,
                 Math.round(((group.current_members || 0) / group.target_group_size) * 100)
@@ -307,6 +325,52 @@ export default function RMGroupsPage() {
           </div>
         )}
       </div>
+
+      {/* Pagination Bar */}
+      {!rmLoading && rmMeta && totalPages > 1 && (
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-5 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs font-semibold text-slate-500">
+            Showing {Math.min(total, (page - 1) * limit + 1)} to{" "}
+            {Math.min(total, page * limit)} of {total} groups
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={page === 1 || rmLoading}
+              className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors"
+            >
+              Previous
+            </button>
+
+            {Array.from({ length: totalPages }, (_, index) => {
+              const pageNumber = index + 1;
+              return (
+                <button
+                  key={pageNumber}
+                  onClick={() => setCurrentPage(pageNumber)}
+                  disabled={rmLoading}
+                  className={`h-8 w-8 rounded-xl text-xs font-bold transition-colors ${
+                    page === pageNumber
+                      ? "bg-[#e34b32] text-white"
+                      : "bg-slate-50 border border-slate-100 text-slate-700 hover:bg-slate-100"
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={page === totalPages || rmLoading}
+              className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 disabled:opacity-40 disabled:hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

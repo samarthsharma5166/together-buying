@@ -24,6 +24,12 @@ interface GroupState {
   rmGroups: PropertyGroup[];
   rmLoading: boolean;
   rmError: string | null;
+  rmMeta: {
+    total?: number;
+    page?: number;
+    limit?: number;
+    totalPages?: number;
+  } | null;
 }
 
 const initialState: GroupState = {
@@ -38,6 +44,7 @@ const initialState: GroupState = {
   rmGroups: [],
   rmLoading: false,
   rmError: null,
+  rmMeta: null,
 };
 
 // Async Thunks
@@ -126,10 +133,13 @@ export const fetchAssignedPropertiesAdmin = createAsyncThunk(
 
 export const fetchRmGroups = createAsyncThunk(
   "group/fetchRmGroups",
-  async (_, { rejectWithValue }) => {
+  async (
+    params: { search?: string; status?: string; page?: number; limit?: number } | undefined,
+    { rejectWithValue }
+  ) => {
     try {
-      const response = await getRmGroups();
-      return response.data || [];
+      const response = await getRmGroups(params);
+      return response;
     } catch (err: any) {
       return rejectWithValue(err.message || "Failed to fetch RM groups");
     }
@@ -259,7 +269,8 @@ const groupSlice = createSlice({
     });
     builder.addCase(fetchRmGroups.fulfilled, (state, action) => {
       state.rmLoading = false;
-      state.rmGroups = action.payload;
+      state.rmGroups = action.payload.data || [];
+      state.rmMeta = action.payload.meta || null;
     });
     builder.addCase(fetchRmGroups.rejected, (state, action) => {
       state.rmLoading = false;

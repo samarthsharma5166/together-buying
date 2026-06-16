@@ -518,8 +518,13 @@ export async function getGroupMembershipStatus(groupId: string): Promise<any> {
   return response.data.data;
 }
 
-export async function getRmGroups(): Promise<ApiList<PropertyGroup>> {
-  const response = await api.get("/rm/groups");
+export async function getRmGroups(params?: {
+  search?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}): Promise<ApiList<PropertyGroup>> {
+  const response = await api.get("/rm/groups", { params });
   return response.data;
 }
 

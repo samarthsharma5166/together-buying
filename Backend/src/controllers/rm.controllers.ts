@@ -17,8 +17,59 @@ export const getMyGroups = tryCatch(async (req: AuthenticatedRequest, res: Respo
     throw new AppError("User information missing from request context", 401);
   }
 
+  const { search, status, page = "1", limit = "10" } = req.query;
+
+  const pageNum = parseInt(page as string, 10) || 1;
+  const limitNum = parseInt(limit as string, 10) || 10;
+  const skip = (pageNum - 1) * limitNum;
+
+  const whereClause: any = {
+    rm_id: rmId,
+  };
+
+  if (status && status !== "ALL") {
+    whereClause.status = status;
+  }
+
+  if (search) {
+    const searchStr = String(search).trim();
+    whereClause.OR = [
+      {
+        name: {
+          contains: searchStr,
+        },
+      },
+      {
+        property: {
+          title: {
+            contains: searchStr,
+          },
+        },
+      },
+      {
+        property: {
+          city: {
+            contains: searchStr,
+          },
+        },
+      },
+      {
+        property: {
+          locality: {
+            contains: searchStr,
+          },
+        },
+      },
+    ];
+  }
+
+  // Get total count for pagination metadata
+  const total = await prisma.propertyGroup.count({
+    where: whereClause,
+  });
+
   const groups = await prisma.propertyGroup.findMany({
-    where: { rm_id: rmId },
+    where: whereClause,
     include: {
       property: {
         select: {
@@ -54,10 +105,18 @@ export const getMyGroups = tryCatch(async (req: AuthenticatedRequest, res: Respo
       },
     },
     orderBy: { createdAt: "desc" },
+    skip,
+    take: limitNum,
   });
 
   return res.status(200).json({
     success: true,
+    meta: {
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum),
+    },
     data: serializeBigInt(groups),
   });
 });
