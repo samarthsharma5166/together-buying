@@ -8,6 +8,7 @@ import {
   adminListUnassignedProperties,
   adminListAssignedProperties,
   getRmGroups,
+  getUserGroups,
   type PropertyGroup,
   type Property
 } from "@/lib/api";
@@ -30,6 +31,9 @@ interface GroupState {
     limit?: number;
     totalPages?: number;
   } | null;
+  userGroups: PropertyGroup[];
+  userLoading: boolean;
+  userError: string | null;
 }
 
 const initialState: GroupState = {
@@ -45,6 +49,9 @@ const initialState: GroupState = {
   rmLoading: false,
   rmError: null,
   rmMeta: null,
+  userGroups: [],
+  userLoading: false,
+  userError: null,
 };
 
 // Async Thunks
@@ -142,6 +149,18 @@ export const fetchRmGroups = createAsyncThunk(
       return response;
     } catch (err: any) {
       return rejectWithValue(err.message || "Failed to fetch RM groups");
+    }
+  }
+);
+
+export const fetchUserGroups = createAsyncThunk(
+  "group/fetchUserGroups",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getUserGroups();
+      return response.data || [];
+    } catch (err: any) {
+      return rejectWithValue(err.message || "Failed to fetch user groups");
     }
   }
 );
@@ -275,6 +294,20 @@ const groupSlice = createSlice({
     builder.addCase(fetchRmGroups.rejected, (state, action) => {
       state.rmLoading = false;
       state.rmError = action.payload as string;
+    });
+
+    // Fetch User Groups
+    builder.addCase(fetchUserGroups.pending, (state) => {
+      state.userLoading = true;
+      state.userError = null;
+    });
+    builder.addCase(fetchUserGroups.fulfilled, (state, action) => {
+      state.userLoading = false;
+      state.userGroups = action.payload;
+    });
+    builder.addCase(fetchUserGroups.rejected, (state, action) => {
+      state.userLoading = false;
+      state.userError = action.payload as string;
     });
   },
 });

@@ -10,7 +10,8 @@ import {
   getAssignedProperties,
   joinGroup,
   leaveGroup,
-  getGroupMembershipStatus
+  getGroupMembershipStatus,
+  getMyParticipationGroups
 } from "../controllers/group.controllers.js";
 import { isAuthenticated, authorizedRoles } from "../middlewares/auth.middleware.js";
 
@@ -20,6 +21,7 @@ const router = Router();
 router.use(isAuthenticated);
 
 // Group membership routes (accessible by premium/admin users)
+router.get("/user/my-groups", getMyParticipationGroups);
 router.post("/:groupId/join", authorizedRoles("BUYER_PREMIUM", "RM", "ADMIN", "SUPER_ADMIN"), joinGroup);
 router.post("/:groupId/leave", authorizedRoles("BUYER_PREMIUM", "RM", "ADMIN", "SUPER_ADMIN"), leaveGroup);
 router.get("/:groupId/membership-status", getGroupMembershipStatus);

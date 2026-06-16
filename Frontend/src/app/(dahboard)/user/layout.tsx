@@ -3,7 +3,7 @@
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logoutUser } from "@/store/slices/authSlice";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect, ReactNode, useState } from "react";
+import { useEffect, ReactNode } from "react";
 import Link from "next/link";
 import {
     SidebarProvider,
@@ -22,12 +22,14 @@ import {
 } from "@/components/ui/sidebar";
 import {
     LayoutDashboard,
-    Users,
-    Briefcase,
-    MessageSquare,
     LogOut,
     User,
-    UserCheck
+    Home,
+    Sparkles,
+    Briefcase,
+    Wallet,
+    Users,
+    CircleDollarSign
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,14 +39,21 @@ interface SidebarItem {
     icon: any;
 }
 
-const rmNavItems: SidebarItem[] = [
-    { label: "Overview", href: "/rm/dashboard", icon: LayoutDashboard },
-    { label: "My Groups", href: "/rm/groups", icon: Users },
-    { label: "Assigned Leads", href: "/rm/leads", icon: Briefcase },
-    { label: "Messages", href: "/rm/messages", icon: MessageSquare },
+const communityNavItems: SidebarItem[] = [
+    { label: "Your Groups", href: "/user/myGroups", icon: Users },
+    { label: "Subscribe", href: "/user/subscribe", icon: Wallet },
 ];
 
-export default function RMLayout({ children }: { children: ReactNode }) {
+const activityNavItems: SidebarItem[] = [
+    { label: "Transections", href: "/user/transections", icon: CircleDollarSign },
+]
+
+
+const settingsNavItems:SidebarItem[]=[
+    { label: "Profile", href: "/user/profile", icon: User },
+]
+
+export default function UserLayout({ children }: { children: ReactNode }) {
     const user = useAppSelector((state) => state.auth.user);
     const loading = useAppSelector((state) => state.auth.loading);
     const dispatch = useAppDispatch();
@@ -53,7 +62,7 @@ export default function RMLayout({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         if (!loading) {
-            if (!user || user.role !== "RM") {
+            if (!user || (user.role !== "USER" && user.role !== "BUYER_PREMIUM")) {
                 router.push("/login");
             }
         }
@@ -70,7 +79,7 @@ export default function RMLayout({ children }: { children: ReactNode }) {
         );
     }
 
-    if (!user || user.role !== "RM") {
+    if (!user || (user.role !== "USER" && user.role !== "BUYER_PREMIUM")) {
         return null; // Will redirect in useEffect
     }
 
@@ -80,6 +89,7 @@ export default function RMLayout({ children }: { children: ReactNode }) {
     }
 
     const initials = `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase();
+    const isPremium = user.role === "BUYER_PREMIUM";
 
     return (
         <SidebarProvider>
@@ -87,12 +97,20 @@ export default function RMLayout({ children }: { children: ReactNode }) {
                 <SidebarHeader className="border-b border-sidebar-border/50">
                     <div className="flex items-center gap-3 px-2 py-1.5">
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#e34b32] text-white font-black shadow-md">
-                            RM
+                            GB
                         </div>
                         <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
                             <span className="font-display text-sm font-black tracking-wide text-sidebar-foreground truncate">GroupBuying</span>
                             <span className="text-[10px] font-black uppercase tracking-widest text-[#e34b32] -mt-0.5 flex items-center gap-1">
-                                <UserCheck size={10} /> RM Desk
+                                {isPremium ? (
+                                    <>
+                                        <Sparkles size={10} className="text-[#e34b32]" /> Premium Desk
+                                    </>
+                                ) : (
+                                    <>
+                                        <User size={10} className="text-slate-400" /> Buyer Desk
+                                    </>
+                                )}
                             </span>
                         </div>
                     </div>
@@ -100,17 +118,62 @@ export default function RMLayout({ children }: { children: ReactNode }) {
 
                 <SidebarContent>
                     <SidebarGroup>
-                        <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">RM Navigation</SidebarGroupLabel>
+                        <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Community</SidebarGroupLabel>
                         <SidebarGroupContent>
                             <SidebarMenu>
-                                {rmNavItems.map((item) => {
-                                    const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                                {communityNavItems.map((item) => {
+                                    const isActive = pathname === item.href;
                                     const Icon = item.icon;
                                     return (
                                         <SidebarMenuItem key={item.href}>
                                             <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
                                                 <Link href={item.href} className="flex items-center w-full gap-3">
-                                                    <Icon className={cn("size-4 shrink-0", isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/70")} />
+                                                    <Icon className={cn("size-4 shrink-0", isActive ? "text-sidebar-accent-foreground" : "text-sidebar-foreground/70")} />
+                                                    <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                                                </Link>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    );
+                                })}
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+
+
+                    <SidebarGroup>
+                        <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Activity</SidebarGroupLabel>
+                        <SidebarGroupContent>
+                            <SidebarMenu>
+                                {activityNavItems.map((item) => {
+                                    const isActive = pathname === item.href;
+                                    const Icon = item.icon;
+                                    return (
+                                        <SidebarMenuItem key={item.href}>
+                                            <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+                                                <Link href={item.href} className="flex items-center w-full gap-3">
+                                                    <Icon className={cn("size-4 shrink-0", isActive ? "text-sidebar-accent-foreground" : "text-sidebar-foreground")} />
+                                                    <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
+                                                </Link>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    );
+                                })}
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+
+                    <SidebarGroup>
+                        <SidebarGroupLabel className="group-data-[collapsible=icon]:hidden">Settings</SidebarGroupLabel>
+                        <SidebarGroupContent>
+                            <SidebarMenu>
+                                {settingsNavItems.map((item) => {
+                                    const isActive = pathname === item.href;
+                                    const Icon = item.icon;
+                                    return (
+                                        <SidebarMenuItem key={item.href}>
+                                            <SidebarMenuButton asChild isActive={isActive} tooltip={item.label}>
+                                                <Link href={item.href} className="flex items-center w-full gap-3">
+                                                    <Icon className={cn("size-4 shrink-0", isActive ? "text-sidebar-accent-foreground" : "text-sidebar-foreground")} />
                                                     <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
                                                 </Link>
                                             </SidebarMenuButton>
@@ -132,7 +195,9 @@ export default function RMLayout({ children }: { children: ReactNode }) {
                                     </span>
                                     <div className="min-w-0 group-data-[collapsible=icon]:hidden">
                                         <p className="truncate text-xs font-bold text-sidebar-foreground leading-tight">{user.firstName} {user.lastName}</p>
-                                        <p className="text-[9px] font-black uppercase tracking-wider text-sidebar-foreground/50">RM Manager</p>
+                                        <p className="text-[9px] font-black uppercase tracking-wider text-sidebar-foreground/50">
+                                            {isPremium ? "Premium Buyer" : "Standard Buyer"}
+                                        </p>
                                     </div>
                                 </div>
                                 <button
@@ -164,8 +229,8 @@ export default function RMLayout({ children }: { children: ReactNode }) {
                         </nav>
                     </div>
                     <Link href="/" className="flex items-center gap-2 sm:hidden">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e34b32] text-sm font-black text-white">T</span>
-                        <span className="font-display text-sm font-black text-[#111111]">RM Console</span>
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#e34b32] text-sm font-black text-white">GB</span>
+                        <span className="font-display text-sm font-black text-[#111111]">Buyer Console</span>
                     </Link>
                 </header>
 

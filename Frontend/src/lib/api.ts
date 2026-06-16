@@ -528,6 +528,11 @@ export async function getRmGroups(params?: {
   return response.data;
 }
 
+export async function getUserGroups(): Promise<ApiList<PropertyGroup>> {
+  const response = await api.get("/groups/user/my-groups");
+  return response.data;
+}
+
 
 
 

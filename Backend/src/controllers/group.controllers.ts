@@ -475,3 +475,58 @@ export const getGroupMembershipStatus = tryCatch(async (req: AuthenticatedReques
     },
   });
 });
+
+/**
+ * @desc Get all property groups the authenticated user has participated in
+ * @route GET /api/groups/user/my-groups
+ * @access Authenticated
+ */
+export const getMyParticipationGroups = tryCatch(async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw new AppError("User information missing from request context", 401);
+  }
+
+  const memberships = await prisma.groupMembers.findMany({
+    where: { userId },
+    include: {
+      group: {
+        include: {
+          property: {
+            include: {
+              developer: {
+                select: {
+                  companyName: true,
+                  logoUrl: true,
+                },
+              },
+              images: {
+                take: 1,
+                select: {
+                  imageUrl: true,
+                },
+              },
+            },
+          },
+          rmUser: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const groups = memberships.map((m) => m.group);
+
+  return res.status(200).json({
+    success: true,
+    data: serializeBigInt(groups),
+  });
+});

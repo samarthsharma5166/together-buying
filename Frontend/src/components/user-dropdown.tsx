@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { logoutUser } from "@/store/slices/authSlice";
 import { useRouter } from "next/navigation";
-import { ChevronDown, LayoutDashboard, LogOut, User, Shield, Briefcase } from "lucide-react";
+import { ChevronDown, LayoutDashboard, LogOut, User, LayoutGrid, Shield, Briefcase } from "lucide-react";
 
 export function UserDropdown() {
   const user = useAppSelector((state) => state.auth.user);
@@ -87,6 +87,18 @@ export function UserDropdown() {
                 RM Dashboard
               </Link>
             )}
+
+            {(user.role === "USER" || user.role === "BUYER_PREMIUM") && (
+              <Link
+                href="/user/myGroups"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-50 hover:text-[#d9462e]"
+              >
+                <User size={16} className="text-slate-400" />
+                User Dashboard
+              </Link>
+            )}
+
 
             <Link
               href="/"

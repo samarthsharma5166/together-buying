@@ -29,7 +29,7 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  if (pathname.startsWith("/admin") || pathname.startsWith("/rm")) {
+  if (pathname.startsWith("/admin") || pathname.startsWith("/rm") || pathname.startsWith("/user")) {
     return null;
   }
 

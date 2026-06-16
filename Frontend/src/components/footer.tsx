@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 
 export function Footer() {
   const pathname = usePathname();
-  const isDashboard = pathname.startsWith("/admin") || pathname.startsWith("/rm");
+  const isDashboard = pathname.startsWith("/admin") || pathname.startsWith("/rm") || pathname.startsWith("/user");
 
   if (isDashboard) {
     return null;
