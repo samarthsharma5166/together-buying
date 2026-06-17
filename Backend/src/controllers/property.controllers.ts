@@ -451,8 +451,14 @@ export const listProperties = tryCatch(async (req: AuthenticatedRequest, res: Re
           },
         },
         images: {
-          take: 1, // Get primary showcase image
           orderBy: { sortOrder: "asc" },
+        },
+        units: {
+          include: {
+            images: {
+              orderBy: { sortOrder: "asc" },
+            },
+          },
         },
         groups: {
           include: {

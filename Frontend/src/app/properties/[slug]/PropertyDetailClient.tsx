@@ -70,6 +70,7 @@ export default function PropertyDetailClient({ property, related }: Props) {
   const [plansLoading, setPlansLoading] = useState(false);
   const [payingPlanId, setPayingPlanId] = useState<string | null>(null);
   const [payError, setPayError] = useState<string | null>(null);
+  const [activeUnitImageIndex, setActiveUnitImageIndex] = useState<Record<string, number>>({});
 
   const hasActiveSubscription = useMemo(() => {
     if (!user) return false;
@@ -1040,17 +1041,40 @@ export default function PropertyDetailClient({ property, related }: Props) {
                       const unit = property.units?.[uIdx];
                       if (!unit) return <div className="text-slate-400 text-sm font-semibold">Unit configuration not found.</div>;
                       
-                      const unitImg = unit.images?.[0];
+                      const activeImgIdx = activeUnitImageIndex[unit.id || ""] || 0;
+                      const unitImg = unit.images?.[activeImgIdx];
                       if (unitImg?.imageUrl) {
                         return (
                           <div className="relative w-full h-full flex flex-col md:flex-row gap-6 items-center">
-                            <div className="relative flex-1 w-full h-full min-h-[200px]">
-                              <Image 
-                                src={getAssetUrl(unitImg.imageUrl) || ""} 
-                                alt={unitImg.caption || `${unit.unitType} Floor Plan`}
-                                fill
-                                className="object-contain"
-                              />
+                            <div className="flex-1 w-full h-full flex flex-col justify-between min-h-[250px]">
+                              <div className="relative flex-1 w-full h-full min-h-[200px]">
+                                <Image 
+                                  src={getAssetUrl(unitImg.imageUrl) || ""} 
+                                  alt={unitImg.caption || `${unit.unitType} Floor Plan`}
+                                  fill
+                                  className="object-contain"
+                                />
+                              </div>
+                              {unit.images && unit.images.length > 1 && (
+                                <div className="flex justify-center gap-2 mt-4 overflow-x-auto py-1 shrink-0">
+                                  {unit.images.map((img, idx) => (
+                                    <button
+                                      key={img.id || idx}
+                                      onClick={() => setActiveUnitImageIndex(prev => ({ ...prev, [unit.id || ""]: idx }))}
+                                      className={`relative h-12 w-12 rounded-lg overflow-hidden border-2 shrink-0 transition ${
+                                        activeImgIdx === idx ? "border-[#e34b32]" : "border-slate-200 hover:border-slate-400"
+                                      }`}
+                                    >
+                                      <Image
+                                        src={getAssetUrl(img.imageUrl) || ""}
+                                        alt={img.caption || "Thumbnail"}
+                                        fill
+                                        className="object-cover"
+                                      />
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                             <div className="w-full md:w-56 text-xs text-slate-600 space-y-2 border-l border-slate-100 pl-4 shrink-0">
                               <h4 className="font-display text-sm font-black text-slate-800">{unit.unitType} Specifications</h4>
@@ -1447,7 +1471,7 @@ export default function PropertyDetailClient({ property, related }: Props) {
                 
                 <a 
                   href={`tel:+91${rmPhone.replace(/[^0-9]/g, "")}`}
-                  className="flex items-center justify-center gap-2 rounded-full bg-[#111111] text-white hover:bg-slate-900 py-3 text-xs font-black uppercase tracking-wider transition text-center"
+                  className="flex items-center justify-center gap-2 rounded-full bg-[#111111] !text-white hover:bg-slate-900 py-3 text-xs font-black uppercase tracking-wider transition text-center"
                 >
                   <Phone size={14} />
                   <span>Call back request</span>

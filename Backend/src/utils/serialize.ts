@@ -8,6 +8,9 @@ export const serializeBigInt = (obj: any): any => {
   if (obj instanceof Date) return obj.toISOString();
   if (Array.isArray(obj)) return obj.map(serializeBigInt);
   if (typeof obj === "object") {
+    if (typeof obj.toNumber === "function") {
+      return obj.toNumber();
+    }
     const serializedObj: any = {};
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
