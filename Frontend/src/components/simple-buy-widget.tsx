@@ -1,11 +1,14 @@
-﻿"use client";
+"use client";
 
 import { motion } from "framer-motion";
 import { Play, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { VideoModal } from "@/components/video-modal";
 
+import { usePathname } from "next/navigation";
+
 export function SimpleBuyWidget() {
+  const pathname = usePathname();
   const [visible, setVisible] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -13,6 +16,10 @@ export function SimpleBuyWidget() {
     const id = window.setTimeout(() => setVisible(true), 10000);
     return () => window.clearTimeout(id);
   }, []);
+
+  if (pathname.startsWith("/admin") || pathname.startsWith("/rm") || pathname.startsWith("/user")) {
+    return null;
+  }
 
   if (!visible) return null;
 
