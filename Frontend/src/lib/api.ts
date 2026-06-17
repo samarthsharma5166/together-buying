@@ -396,6 +396,23 @@ export type SubscriptionPlan = {
   updatedAt: string;
 };
 
+export type Subscription = {
+  id: string;
+  userId: string;
+  amount: number;
+  status: "ACTIVE" | "INACTIVE";
+  planId: string | null;
+  expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  plan?: SubscriptionPlan | null;
+};
+
+export async function getUserSubscriptions(): Promise<ApiList<Subscription>> {
+  const response = await api.get("/subscriptions/my-subscriptions");
+  return response.data;
+}
+
 export async function adminListSubscriptionPlans(): Promise<ApiList<SubscriptionPlan>> {
   const response = await api.get("/subscription-plans");
   return response.data;

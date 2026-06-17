@@ -355,4 +355,29 @@ export const verifySubscriptionPayment = tryCatch(async (req: AuthenticatedReque
   });
 });
 
+/**
+ * @desc Get authenticated user's subscription history
+ * @route GET /api/subscriptions/my-subscriptions
+ * @access Authenticated
+ */
+export const getMySubscriptions = tryCatch(async (req: AuthenticatedRequest, res: Response) => {
+  const userId = req.user!.id;
+
+  const subscriptions = await prisma.subscription.findMany({
+    where: { userId },
+    include: {
+      plan: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return res.status(200).json({
+    success: true,
+    data: subscriptions,
+  });
+});
+
+
 

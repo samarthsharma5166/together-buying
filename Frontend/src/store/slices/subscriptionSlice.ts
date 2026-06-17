@@ -4,7 +4,9 @@ import {
   adminCreateSubscriptionPlan,
   adminUpdateSubscriptionPlan,
   adminDeleteSubscriptionPlan,
-  type SubscriptionPlan
+  getUserSubscriptions,
+  type SubscriptionPlan,
+  type Subscription
 } from "@/lib/api";
 
 interface SubscriptionState {
@@ -14,6 +16,9 @@ interface SubscriptionState {
   formSubmitting: boolean;
   formError: string | null;
   isSubscriptionModalOpen: boolean;
+  userSubscriptions: Subscription[];
+  userSubscriptionsLoading: boolean;
+  userSubscriptionsError: string | null;
 }
 
 const initialState: SubscriptionState = {
@@ -23,9 +28,23 @@ const initialState: SubscriptionState = {
   formSubmitting: false,
   formError: null,
   isSubscriptionModalOpen: false,
+  userSubscriptions: [],
+  userSubscriptionsLoading: false,
+  userSubscriptionsError: null,
 };
 
 // Async Thunks
+export const fetchUserSubscriptions = createAsyncThunk(
+  "subscription/fetchUserSubscriptions",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getUserSubscriptions();
+      return response.data || [];
+    } catch (err: any) {
+      return rejectWithValue(err.message || "Failed to fetch your subscriptions");
+    }
+  }
+);
 export const fetchSubscriptionPlansAdmin = createAsyncThunk(
   "subscription/fetchPlansAdmin",
   async (_, { rejectWithValue }) => {
@@ -88,6 +107,20 @@ const subscriptionSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    // Fetch User Subscriptions
+    builder.addCase(fetchUserSubscriptions.pending, (state) => {
+      state.userSubscriptionsLoading = true;
+      state.userSubscriptionsError = null;
+    });
+    builder.addCase(fetchUserSubscriptions.fulfilled, (state, action) => {
+      state.userSubscriptionsLoading = false;
+      state.userSubscriptions = action.payload;
+    });
+    builder.addCase(fetchUserSubscriptions.rejected, (state, action) => {
+      state.userSubscriptionsLoading = false;
+      state.userSubscriptionsError = action.payload as string;
+    });
+
     // Fetch Plans
     builder.addCase(fetchSubscriptionPlansAdmin.pending, (state) => {
       state.loading = true;
