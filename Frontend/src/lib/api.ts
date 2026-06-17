@@ -413,6 +413,20 @@ export async function getUserSubscriptions(): Promise<ApiList<Subscription>> {
   return response.data;
 }
 
+export type Transection = {
+  id: string;
+  userId: string;
+  amount: number;
+  status: "PENDING" | "SUCCESS" | "FAILED";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function getUserTransections(): Promise<ApiList<Transection>> {
+  const response = await api.get("/transections");
+  return response.data;
+}
+
 export async function adminListSubscriptionPlans(): Promise<ApiList<SubscriptionPlan>> {
   const response = await api.get("/subscription-plans");
   return response.data;

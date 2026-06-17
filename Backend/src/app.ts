@@ -10,6 +10,7 @@ import rmRouter from './routes/rm.routes.js'
 import groupRouter from './routes/group.routes.js'
 import subscriptionPlanRouter from './routes/subscriptionPlan.routes.js'
 import subscriptionRouter from './routes/subscription.routes.js'
+import transectionRouter from './routes/transection.routes.js'
 
 // middleware import
 import cookieParser from 'cookie-parser'
@@ -51,6 +52,7 @@ app.use("/api/rm",rmRouter)
 app.use("/api/groups", groupRouter)
 app.use("/api/subscription-plans", subscriptionPlanRouter)
 app.use("/api/subscriptions", subscriptionRouter)
+app.use("/api/transections", transectionRouter)
 
 
 

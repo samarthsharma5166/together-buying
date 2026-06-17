@@ -4,6 +4,7 @@ import developerReducer from "./slices/developerSlice";
 import propertyReducer from "./slices/propertySlice";
 import groupReducer from "./slices/groupSlice";
 import subscriptionReducer from "./slices/subscriptionSlice";
+import transectionReducer from "./slices/transectionSlice";
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
     property: propertyReducer,
     group: groupReducer,
     subscription: subscriptionReducer,
+    transection: transectionReducer,
   },
 });
 
