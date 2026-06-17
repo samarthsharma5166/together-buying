@@ -2,11 +2,10 @@ import type { Request, Response, NextFunction } from "express"
 
 import { tryCatch } from "../utils/tryCatch.js";
 import AppError from "../utils/error.utils.js";
-import { createUserSchema } from "../schemas/auth.schemas.js";
+import { createUserSchema, loginSchema, updateUserSchema } from "../schemas/auth.schemas.js";
 import { prisma } from "../db/db.js";
 import bcrypt from 'bcrypt'
 import jwt from "jsonwebtoken";
-import { loginSchema } from "../schemas/auth.schemas.js";
 import type { AuthenticatedRequest } from "../middlewares/auth.middleware.js";
 
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
@@ -139,5 +138,93 @@ export const me = tryCatch(async (req: AuthenticatedRequest, res: Response, next
   res.status(200).json({
     success: true,
     user: req.user,
+  });
+});
+
+export const updateProfile = tryCatch(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const userId = req.user!.id;
+
+  const result = updateUserSchema.safeParse(req.body);
+  if (!result.success) {
+    throw new AppError(result.error.issues[0]?.message || "Validation failed", 400);
+  }
+
+  const {
+    firstName,
+    lastName,
+    email,
+    phone,
+    addressLine1,
+    addressLine2,
+    city,
+    state,
+    pincode,
+    password
+  } = result.data;
+
+  // Check unique constraints if email or phone is updated
+  if (email || phone) {
+    const conflicts = await prisma.user.findFirst({
+      where: {
+        id: { not: userId },
+        OR: [
+          ...(email ? [{ email }] : []),
+          ...(phone ? [{ phone }] : [])
+        ]
+      }
+    });
+
+    if (conflicts) {
+      throw new AppError("Email or phone number is already registered to another user", 400);
+    }
+  }
+
+  const updateData: any = {};
+  if (firstName !== undefined) updateData.firstName = firstName;
+  if (lastName !== undefined) updateData.lastName = lastName;
+  if (email !== undefined) updateData.email = email;
+  if (phone !== undefined) updateData.phone = phone;
+  if (addressLine1 !== undefined) updateData.addressLine1 = addressLine1;
+  if (addressLine2 !== undefined) updateData.addressLine2 = addressLine2;
+  if (city !== undefined) updateData.city = city;
+  if (state !== undefined) updateData.state = state;
+  if (pincode !== undefined) updateData.pincode = pincode;
+
+  if (password) {
+    updateData.password = await bcrypt.hash(password, 10);
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: updateData,
+    select: {
+      id: true,
+      email: true,
+      phone: true,
+      role: true,
+      firstName: true,
+      lastName: true,
+      avatarUrl: true,
+      addressLine1: true,
+      addressLine2: true,
+      city: true,
+      state: true,
+      pincode: true,
+      subscriptions: {
+        where: {
+          status: "ACTIVE",
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 1,
+      },
+    }
+  });
+
+  return res.status(200).json({
+    success: true,
+    message: "Profile updated successfully",
+    user: updatedUser
   });
 });

@@ -245,6 +245,15 @@ export async function logoutRequest() {
   }
 }
 
+export async function updateUserProfile(body: any) {
+  try {
+    const response = await api.patch("/auth/profile", body);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Failed to update profile");
+  }
+}
+
 export async function adminCreateDeveloper(formData: FormData): Promise<Developer> {
   const response = await api.post("/developers", formData, {
     headers: {

@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { getMe, authRequest, logoutRequest } from "@/lib/api";
+import { getMe, authRequest, logoutRequest, updateUserProfile } from "@/lib/api";
 
 export interface User {
   id: string;
@@ -8,6 +8,12 @@ export interface User {
   email: string;
   phone: string;
   role: "USER" | "BUYER_PREMIUM" | "RM" | "ADMIN" | "SUPER_ADMIN";
+  avatarUrl?: string | null;
+  addressLine1?: string | null;
+  addressLine2?: string | null;
+  city?: string | null;
+  state?: string | null;
+  pincode?: string | null;
   subscriptions?: Array<{
     id: string;
     status: "ACTIVE" | "INACTIVE";
@@ -36,6 +42,18 @@ export const fetchCurrentUser = createAsyncThunk(
       return user;
     } catch (error: any) {
       return thunkAPI.rejectWithValue(error.message || "Failed to fetch user");
+    }
+  }
+);
+
+export const updateCurrentUserProfile = createAsyncThunk(
+  "auth/updateCurrentUserProfile",
+  async (body: any, thunkAPI) => {
+    try {
+      const response = await updateUserProfile(body);
+      return response.user;
+    } catch (error: any) {
+      return thunkAPI.rejectWithValue(error.message || "Failed to update profile");
     }
   }
 );
@@ -94,6 +112,20 @@ const authSlice = createSlice({
     });
     builder.addCase(fetchCurrentUser.rejected, (state, action) => {
       state.user = null;
+      state.loading = false;
+      state.error = action.payload as string;
+    });
+
+    // updateCurrentUserProfile
+    builder.addCase(updateCurrentUserProfile.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    });
+    builder.addCase(updateCurrentUserProfile.fulfilled, (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
+      state.loading = false;
+    });
+    builder.addCase(updateCurrentUserProfile.rejected, (state, action) => {
       state.loading = false;
       state.error = action.payload as string;
     });
