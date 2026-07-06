@@ -235,7 +235,7 @@ textarea {
   isolation: isolate;
   background:
     linear-gradient(110deg, rgba(17, 17, 17, .76), rgba(227, 75, 50, .78) 52%, rgba(255, 112, 79, .72));
-    /* url("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1900&q=90") center/cover fixed; */
+  /* url("https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1900&q=90") center/cover fixed; */
 }
 
 .property-detail-bg::before,
@@ -624,11 +624,9 @@ textarea {
   font-weight: 900;
   letter-spacing: -0.02em;
   text-transform: uppercase;
-  background: linear-gradient(
-    to bottom,
-    rgb(227 75 50 / 28%) 30%,
-    rgb(255 255 255 / 0%) 76%
-  );
+  background: linear-gradient(to bottom,
+      rgb(227 75 50 / 28%) 30%,
+      rgb(255 255 255 / 0%) 76%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1446,9 +1444,11 @@ textarea {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   html {
     @apply font-sans;
   }
@@ -1456,10 +1456,13 @@ textarea {
 
 /* Custom badge bouncing and highlighting animation */
 @keyframes badge-highlight-bounce {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03), 0 0 0 rgba(227, 75, 50, 0);
   }
+
   50% {
     transform: translateY(-6px);
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04), 0 0 16px rgba(227, 75, 50, 0.22);

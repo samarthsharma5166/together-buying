@@ -34,7 +34,7 @@ export default async function HomePage() {
     { title: "Promising Plots / Villas", text: "Handpicked plot and villa projects with strong appreciation potential.", items: promising },
   ].filter((group) => group.items.length > 0);
 
-  return (    
+  return (
     <main>
       <section className="bg-white relative overflow-hidden pb-10 pt-8 sm:pb-14 sm:pt-10 md:pb-16 md:pt-12 lg:pb-20 lg:pt-14">
         <div className="pointer-events-none absolute -left-20 top-20 hidden h-72 w-72 rounded-full bg-[#e34b32]/20 blur-3xl sm:block" />
@@ -49,7 +49,7 @@ export default async function HomePage() {
           <div className="reveal-up w-full min-w-0 text-center sm:text-left">
             <div className="mb-4 flex justify-center sm:justify-start">
               <div className="animate-badge-highlight inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-2 text-xs font-black text-[#df432c] shadow-sm sm:text-base md:text-base">
-                 Looking to buy your Dream Property?
+                Looking to buy your Dream Property?
               </div>
             </div>
             <h1 className="mx-auto max-w-full font-display text-[clamp(2rem,7vw,2.75rem)] font-black leading-[1.15] tracking-tight text-balance sm:mx-0 sm:text-[clamp(2.25rem,5vw,3.25rem)] md:text-[clamp(2.5rem,4.2vw,3.5rem)] lg:text-[clamp(2.5rem,3.2vw,3.5rem)] lg:leading-[1.1] xl:text-[clamp(3rem,3.5vw,4.25rem)]">
@@ -59,11 +59,11 @@ export default async function HomePage() {
             <p className="mt-4 font-display text-2xl font-black text-[#df432c] sm:text-3xl md:text-2xl">
               Group Up & Save More!
             </p>
-              <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:mx-0 sm:text-lg md:text-xl md:leading-7">
-                Get Group Buying Discount + 100% Broker Commission Cashback</p>
-              <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-slate-600 sm:mx-0 sm:text-lg md:text-xl md:leading-7">
-                Join 3-7 intrested buyers and negotiate directly with developers
-              </p>
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:mx-0 sm:text-lg md:text-xl md:leading-7">
+              Get Group Buying Discount + 100% Broker Commission Cashback</p>
+            <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-slate-600 sm:mx-0 sm:text-lg md:text-xl md:leading-7">
+              Join 3-7 intrested buyers and negotiate directly with developers
+            </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-start">
               <ButtonLink href="/properties" className="w-full !px-6 !py-3.5 !text-base sm:w-auto">
                 Explore Properties <ArrowRight size={20} />
@@ -89,7 +89,7 @@ export default async function HomePage() {
             <div className="reveal-up mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-3 lg:mx-0 lg:max-w-none">
               <div className="flex justify-center lg:justify-start">
                 <div className="inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-2 text-[10px] font-black text-[#df432c] shadow-sm whitespace-nowrap min-[375px]:text-xs sm:text-sm md:text-base">
-                   India's 1st AI Powered Group Buying Real Estate Platform!
+                  India's 1st AI Powered Group Buying Real Estate Platform!
                 </div>
               </div>
               <HeroImageCarousel slides={heroSlides} />
@@ -106,8 +106,10 @@ export default async function HomePage() {
 
       {propertyGroups.map((group) => (
         <Section key={group.title} eyebrow={group.title} title={group.text} headingAlign="left">
-          <div className="mb-6 flex justify-end"><ButtonLink href="/properties" variant="secondary">view all <ArrowRight size={18} /></ButtonLink></div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{group.items.map((property, index) => <PropertyCard key={`${group.title}-${property.id}-${index}`} property={property} />)}</div>
+          <div className="mt-8 flex justify-center">
+            <ButtonLink href="/properties" variant="secondary">Show More</ButtonLink>
+          </div>
         </Section>
       ))}
 

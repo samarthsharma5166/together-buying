@@ -70,7 +70,7 @@ export function PropertyCard({ property, compact = false }: { property: Property
 
   return (
     <Link href={href} onClick={handleClick} className="group magnetic-card hover-lift block overflow-hidden rounded-[1.65rem] bg-white p-3 premium-border">
-      <div className="relative h-44 overflow-hidden rounded-[1.1rem] bg-gradient-to-br from-slate-700 via-slate-800 to-[#111111]">
+      <div className="relative h-60 overflow-hidden rounded-[1.1rem] bg-gradient-to-br from-slate-700 via-slate-800 to-[#111111]">
         {carouselImages.length > 0 ? (
           <PropertyImageCarousel images={carouselImages} />
         ) : (
