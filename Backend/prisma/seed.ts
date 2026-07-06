@@ -1,18 +1,8 @@
-import { PrismaClient, PropertyStatus, Role, PropertyType, PossessionStatus, PropertyImageType, UnitType, UnitImageType } from "@prisma/client";
+import { PrismaClient, PropertyStatus, Role, PropertyType, PossessionStatus, PropertyImageType, UnitType, UnitImageType, PartnershipStatus } from "@prisma/client";
 import bcrypt from "bcrypt";
+import { faker } from "@faker-js/faker";
 
 const prisma = new PrismaClient();
-
-const developers = [
-  { companyName: "Godrej Properties", slug: "godrej-properties", headquartersCity: "Mumbai", contactName: "Aarav Mehta", contactEmail: "partners@godrej-groupbuying.in", contactPhone: "9000000001", logoUrl: "https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&w=500&q=80", bannerImageUrl: "https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1400&q=86" },
-  { companyName: "DLF Limited", slug: "dlf-limited", headquartersCity: "Gurugram", contactName: "Riya Kapoor", contactEmail: "partners@dlf-groupbuying.in", contactPhone: "9000000002", logoUrl: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=500&q=80", bannerImageUrl: "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1400&q=86" },
-  { companyName: "M3M India", slug: "m3m-india", headquartersCity: "Gurugram", contactName: "Kabir Arora", contactEmail: "partners@m3m-groupbuying.in", contactPhone: "9000000003", logoUrl: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=500&q=80", bannerImageUrl: "https://images.unsplash.com/photo-1494526585095-c41746248156?auto=format&fit=crop&w=1400&q=86" },
-  { companyName: "Emaar India", slug: "emaar-india", headquartersCity: "Gurugram", contactName: "Ishaan Sethi", contactEmail: "partners@emaar-groupbuying.in", contactPhone: "9000000004", logoUrl: "https://images.unsplash.com/photo-1600607687644-c7171b42498b?auto=format&fit=crop&w=500&q=80", bannerImageUrl: "https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1400&q=86" },
-  { companyName: "Trehan Iris", slug: "trehan-iris", headquartersCity: "Noida", contactName: "Neha Bansal", contactEmail: "partners@trehan-groupbuying.in", contactPhone: "9000000005", logoUrl: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=500&q=80", bannerImageUrl: "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=1400&q=86" },
-  { companyName: "Signature Global", slug: "signature-global", headquartersCity: "Gurugram", contactName: "Manav Singh", contactEmail: "partners@signature-groupbuying.in", contactPhone: "9000000006", logoUrl: "https://images.unsplash.com/photo-1600607688066-890987f18a86?auto=format&fit=crop&w=500&q=80", bannerImageUrl: "https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?auto=format&fit=crop&w=1400&q=86" },
-  { companyName: "Whiteland Corporation", slug: "whiteland-corporation", headquartersCity: "Gurugram", contactName: "Tanya Malhotra", contactEmail: "partners@whiteland-groupbuying.in", contactPhone: "9000000007", logoUrl: "https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=500&q=80", bannerImageUrl: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1400&q=86" },
-  { companyName: "Krisumi Corporation", slug: "krisumi-corporation", headquartersCity: "Gurugram", contactName: "Devika Rao", contactEmail: "partners@krisumi-groupbuying.in", contactPhone: "9000000008", logoUrl: "https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&w=500&q=80", bannerImageUrl: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1400&q=86" },
-];
 
 const imageSets = {
   skyline: [
@@ -33,56 +23,6 @@ const imageSets = {
   ],
 };
 
-const properties = [
-  { developer: "Godrej Properties", title: "Godrej Miraya", slug: "godrej-miraya", city: "Gurugram", locality: "Sector 43", propertyType: "Apartment", possessionStatus: "New Launch", minPrice: "52500000", maxPrice: "90000000", isFeatured: true, isPreLaunch: false, images: imageSets.luxury, units: [["3 BHK", 2800, "52500000"], ["4 BHK", 3900, "74000000"]] },
-  { developer: "DLF Limited", title: "DLF Privana West", slug: "dlf-privana-west", city: "Gurugram", locality: "Sector 76", propertyType: "Luxury Apartment", possessionStatus: "Under Construction", minPrice: "62000000", maxPrice: "115000000", isFeatured: true, isPreLaunch: false, images: imageSets.skyline, units: [["4 BHK", 3577, "62000000"], ["Penthouse", 5200, "115000000"]] },
-  { developer: "M3M India", title: "M3M Altitude", slug: "m3m-altitude", city: "Gurugram", locality: "Sector 65", propertyType: "Apartment", possessionStatus: "Pre Launch", minPrice: "41000000", maxPrice: "78000000", isFeatured: true, isPreLaunch: true, images: imageSets.luxury, units: [["3.5 BHK", 2500, "41000000"], ["4.5 BHK", 3600, "69000000"]] },
-  { developer: "Emaar India", title: "Emaar Urban Ascent", slug: "emaar-urban-ascent", city: "Gurugram", locality: "Golf Course Extension", propertyType: "Apartment", possessionStatus: "New Launch", minPrice: "33500000", maxPrice: "68000000", isFeatured: true, isPreLaunch: true, images: imageSets.interiors, units: [["3 BHK", 2100, "33500000"], ["4 BHK", 3100, "52000000"]] },
-  { developer: "Trehan Iris", title: "Trehan Iris Broadway", slug: "trehan-iris-broadway", city: "Noida", locality: "Sector 85", propertyType: "Commercial", possessionStatus: "Ready To Move", minPrice: "18000000", maxPrice: "35000000", isFeatured: false, isPreLaunch: false, images: imageSets.commercial, units: [["Retail Studio", 850, "18000000"], ["Anchor Shop", 1400, "35000000"]] },
-  { developer: "Signature Global", title: "Signature Titanium SPR", slug: "signature-titanium-spr", city: "Gurugram", locality: "SPR", propertyType: "Apartment", possessionStatus: "Under Construction", minPrice: "28500000", maxPrice: "52000000", isFeatured: true, isPreLaunch: false, images: imageSets.skyline, units: [["3 BHK", 1900, "28500000"], ["3 BHK + S", 2500, "42000000"]] },
-  { developer: "Whiteland Corporation", title: "Whiteland Blissville", slug: "whiteland-blissville", city: "Gurugram", locality: "Sector 76", propertyType: "Apartment", possessionStatus: "Ready To Move", minPrice: "22500000", maxPrice: "43000000", isFeatured: false, isPreLaunch: false, images: imageSets.interiors, units: [["2 BHK", 1400, "22500000"], ["3 BHK", 2050, "33000000"]] },
-  { developer: "Krisumi Corporation", title: "Krisumi Waterfall Residences", slug: "krisumi-waterfall-residences", city: "Gurugram", locality: "Sector 36A", propertyType: "Luxury Apartment", possessionStatus: "Under Construction", minPrice: "31000000", maxPrice: "85000000", isFeatured: true, isPreLaunch: false, images: imageSets.luxury, units: [["2 BHK", 1475, "31000000"], ["4 BHK", 3650, "85000000"]] },
-  { developer: "DLF Limited", title: "DLF Midtown Heights", slug: "dlf-midtown-heights", city: "Delhi", locality: "Moti Nagar", propertyType: "Apartment", possessionStatus: "Ready To Move", minPrice: "39000000", maxPrice: "76000000", isFeatured: false, isPreLaunch: false, images: imageSets.skyline, units: [["3 BHK", 2300, "39000000"], ["4 BHK", 3200, "64000000"]] },
-  { developer: "Godrej Properties", title: "Godrej Woods Estate", slug: "godrej-woods-estate", city: "Noida", locality: "Sector 43", propertyType: "Apartment", possessionStatus: "Under Construction", minPrice: "25000000", maxPrice: "58000000", isFeatured: false, isPreLaunch: false, images: imageSets.interiors, units: [["2.5 BHK", 1550, "25000000"], ["3.5 BHK", 2350, "42000000"]] },
-  { developer: "M3M India", title: "M3M Capital Walk", slug: "m3m-capital-walk", city: "Gurugram", locality: "Dwarka Expressway", propertyType: "Commercial", possessionStatus: "New Launch", minPrice: "12500000", maxPrice: "42000000", isFeatured: false, isPreLaunch: true, images: imageSets.commercial, units: [["Retail", 650, "12500000"], ["Office Suite", 1250, "26000000"]] },
-  { developer: "Emaar India", title: "Emaar Serenity Hills", slug: "emaar-serenity-hills", city: "Gurugram", locality: "Sohna Road", propertyType: "Villa", possessionStatus: "Pre Launch", minPrice: "78000000", maxPrice: "150000000", isFeatured: true, isPreLaunch: true, images: imageSets.luxury, units: [["4 BHK Villa", 4200, "78000000"], ["5 BHK Villa", 6400, "150000000"]] },
-];
-
-function mapPropertyType(type: string): PropertyType {
-  switch (type.toLowerCase()) {
-    case "commercial":
-      return PropertyType.COMMERCIAL;
-    default:
-      return PropertyType.RESIDENTIAL;
-  }
-}
-
-function mapPossessionStatus(status: string): PossessionStatus {
-  switch (status.toLowerCase()) {
-    case "new launch":
-    case "pre launch":
-      return PossessionStatus.PRE_LAUNCH;
-    case "ready to move":
-      return PossessionStatus.READY_TO_MOVE;
-    default:
-      return PossessionStatus.UNDER_CONSTRUCTION;
-  }
-}
-
-function mapUnitType(type: string): UnitType {
-  const t = type.toLowerCase();
-  if (t.includes("1 bhk") || t === "1bhk") return UnitType.BHK_1;
-  if (t.includes("2 bhk") || t === "2bhk") return UnitType.BHK_2;
-  if (t.includes("3 bhk") || t === "3bhk") return UnitType.BHK_3;
-  if (t.includes("4 bhk") || t === "4bhk") return UnitType.BHK_4;
-  if (t.includes("5 bhk") || t === "5bhk" || t.includes("penthouse")) return UnitType.BHK_5;
-  if (t.includes("villa")) return UnitType.VILLA;
-  if (t.includes("plot")) return UnitType.PLOT;
-  if (t.includes("office")) return UnitType.OFFICE;
-  if (t.includes("shop") || t.includes("retail")) return UnitType.SHOP;
-  return UnitType.BHK_3; // Fallback
-}
-
 async function main() {
   await prisma.propertyImage.deleteMany();
   await prisma.propertyUnit.deleteMany();
@@ -101,72 +41,101 @@ async function main() {
     },
   });
 
-  const developerMap = new Map<string, string>();
-  for (const developer of developers) {
+  const developerIds: string[] = [];
+
+  // Generate 30 Developers
+  for (let i = 0; i < 30; i++) {
+    const companyName = faker.company.name() + " Real Estate";
     const created = await prisma.developer.create({
       data: {
-        ...developer,
-        description: `${developer.companyName} is a verified GroupBuying developer partner with premium inventory and developer-direct negotiation support.`,
+        companyName,
+        slug: faker.helpers.slugify(companyName).toLowerCase() + '-' + i,
+        headquartersCity: faker.location.city(),
+        contactName: faker.person.fullName(),
+        contactEmail: `dev${i}@groupbuying.in`,
+        contactPhone: `9000${i.toString().padStart(6, '0')}`,
+        logoUrl: faker.image.url(),
+        bannerImageUrl: faker.image.url(),
+        websiteUrl: faker.internet.url(),
+        establishedYear: faker.number.int({ min: 1980, max: 2023 }),
+        description: faker.company.catchPhrase(),
+        reraRegistered: faker.datatype.boolean(),
+        partnershipStatus: PartnershipStatus.ACTIVE,
       },
     });
-    developerMap.set(created.companyName, created.id);
+    developerIds.push(created.id);
   }
 
-  for (const property of properties) {
-    const developerId = developerMap.get(property.developer);
-    if (!developerId) continue;
+  // Generate 30 Properties
+  for (let i = 0; i < 30; i++) {
+    const developerId = faker.helpers.arrayElement(developerIds);
+    const title = faker.location.street() + " " + faker.helpers.arrayElement(["Residences", "Estate", "Towers", "Heights", "Villas"]);
+    const propertyType = faker.helpers.arrayElement([PropertyType.RESIDENTIAL, PropertyType.COMMERCIAL]);
+    const isPreLaunch = faker.datatype.boolean();
+    
+    // Choose random images
+    const imageSetKeys = Object.keys(imageSets) as (keyof typeof imageSets)[];
+    const imageSet = imageSets[faker.helpers.arrayElement(imageSetKeys)];
+    
+    const minPrice = faker.number.int({ min: 10000000, max: 50000000 });
+    const maxPrice = minPrice + faker.number.int({ min: 10000000, max: 50000000 });
 
     await prisma.property.create({
       data: {
-        title: property.title,
-        slug: property.slug,
-        description: `${property.title} offers premium real estate inventory in ${property.locality}, ${property.city}. GroupBuying buyers can unlock stronger pricing, broker cashback and expert RM support through a verified buyer group.`,
-        propertyType: mapPropertyType(property.propertyType),
+        title,
+        slug: faker.helpers.slugify(title).toLowerCase() + '-' + i,
+        description: faker.lorem.sentence(),
+        propertyType,
         status: PropertyStatus.ACTIVE,
-        possessionStatus: mapPossessionStatus(property.possessionStatus),
-        city: property.city,
-        locality: property.locality,
-        address: `${property.locality}, ${property.city}`,
-        minPrice: BigInt(property.minPrice),
-        maxPrice: BigInt(property.maxPrice),
-        isFeatured: property.isFeatured,
-        isPreLaunch: property.isPreLaunch,
+        possessionStatus: faker.helpers.arrayElement([PossessionStatus.PRE_LAUNCH, PossessionStatus.UNDER_CONSTRUCTION, PossessionStatus.READY_TO_MOVE]),
+        city: faker.location.city(),
+        locality: faker.location.street(),
+        address: faker.location.streetAddress(),
+        minPrice: BigInt(minPrice),
+        maxPrice: BigInt(maxPrice),
+        isFeatured: faker.datatype.boolean(),
+        isPreLaunch,
+        isFastSelling: faker.datatype.boolean(),
+        isPromising: faker.datatype.boolean(),
         developerId,
         createdById: admin.id,
-        reraNumber: `RERA-HR-${Math.floor(100000 + Math.random() * 900000)}`,
-        reraState: "Haryana",
+        reraNumber: `RERA-${faker.string.alphanumeric(8).toUpperCase()}`,
+        reraState: faker.location.state(),
         images: {
-          create: property.images.map((imageUrl, index) => ({
+          create: imageSet.map((imageUrl, index) => ({
             imageUrl,
-            caption: `${property.title} ${index === 0 ? "showcase" : "gallery"} image`,
+            caption: faker.lorem.words(3),
             imageType: index === 0 ? PropertyImageType.EXTERIOR : PropertyImageType.AMENITY,
             sortOrder: index,
           })),
         },
         units: {
-          create: property.units.map(([unitType, area, price], index) => ({
-            unitType: mapUnitType(String(unitType)),
-            superAreaSqft: Number(area),
-            carpetAreaSqft: Math.round(Number(area) * 0.72),
-            price: BigInt(String(price)),
-            availableUnits: 6 + index * 3,
-            images: {
-              create: [
-                {
-                  imageUrl: imageSets.interiors[index % imageSets.interiors.length],
-                  caption: `${property.title} ${unitType} interior`,
-                  imageType: UnitImageType.INTERIOR,
-                  sortOrder: index,
-                }
-              ]
-            },
-          })),
+          create: Array.from({ length: faker.number.int({ min: 2, max: 5 }) }).map((_, index) => {
+            const area = faker.number.int({ min: 800, max: 4000 });
+            return {
+              unitType: faker.helpers.arrayElement([UnitType.BHK_2, UnitType.BHK_3, UnitType.BHK_4, UnitType.VILLA]),
+              superAreaSqft: area,
+              carpetAreaSqft: Math.round(area * 0.72),
+              price: BigInt(minPrice + faker.number.int({ min: 0, max: maxPrice - minPrice })),
+              availableUnits: faker.number.int({ min: 1, max: 20 }),
+              images: {
+                create: [
+                  {
+                    imageUrl: imageSet[index % imageSet.length],
+                    caption: faker.lorem.words(2),
+                    imageType: UnitImageType.INTERIOR,
+                    sortOrder: index,
+                  }
+                ]
+              },
+            };
+          }),
         },
       },
     });
   }
 
-  console.log(`Seeded ${developers.length} developers and ${properties.length} properties.`);
+  console.log(`Seeded 30 developers and 30 properties with Faker.`);
 }
 
 main()

@@ -16,7 +16,7 @@ export function Section({ eyebrow, title, children, className, description, head
   const isLeft = headingAlign === "left";
 
   return (
-    <section className={cn("py-12 md:py-18", className)} {...props}>
+    <section className={cn("py-8 md:py-10", className)} {...props}>
       <div className="container-shell">
         {(mainHeading || description) && (
           <Reveal className={cn("mb-8 max-w-5xl", isLeft ? "text-left" : "mx-auto text-center")}>

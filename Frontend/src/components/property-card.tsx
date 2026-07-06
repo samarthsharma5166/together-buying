@@ -5,10 +5,11 @@ import { useEffect, useMemo, useState } from "react";
 import { Heart, MapPin, Phone, Repeat2, Share2, ShieldCheck, Users } from "lucide-react";
 import type { Property } from "@/lib/api";
 import { getPropertyCarouselImages } from "@/lib/api";
-import { initials, rangePrice } from "@/lib/utils";
+import { calculateDiscount, initials, rangePrice } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { openSubscriptionModal } from "@/store/slices/subscriptionSlice";
 import { cn } from "@/lib/utils";
+import { RiDiscountPercentFill } from "react-icons/ri";
 
 function PropertyImageCarousel({ images }: { images: string[] }) {
   const [index, setIndex] = useState(0);
@@ -54,6 +55,10 @@ export function PropertyCard({ property, compact = false }: { property: Property
   const user = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
 
+  const { discountPercent, formatedDiscountAmount } = useMemo(() => {
+    return calculateDiscount(Number(property.minPrice || 0), Number(property.maxPrice || 0))
+  }, [property.minPrice, property.maxPrice]);
+
   const carouselImages = useMemo(() => getPropertyCarouselImages(property), [property]);
   const href = `/properties/${property.slug || property.id}`;
   const joined = property.isPreLaunch ? 4 : property.isFeatured ? 7 : 2;
@@ -70,7 +75,7 @@ export function PropertyCard({ property, compact = false }: { property: Property
 
   return (
     <Link href={href} onClick={handleClick} className="group magnetic-card hover-lift block overflow-hidden rounded-[1.65rem] bg-white p-3 premium-border">
-      <div className="relative h-60 overflow-hidden rounded-[1.1rem] bg-gradient-to-br from-slate-700 via-slate-800 to-[#111111]">
+      <div className="relative h-72 overflow-hidden rounded-[1.1rem] bg-gradient-to-br from-slate-700 via-slate-800 to-[#111111]">
         {carouselImages.length > 0 ? (
           <PropertyImageCarousel images={carouselImages} />
         ) : (
@@ -78,7 +83,7 @@ export function PropertyCard({ property, compact = false }: { property: Property
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
         <div className="absolute left-3 top-3 z-10">
-          <span className="ribbon-badge bg-emerald-600 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-white shadow-lg">
+          <span className="ribbon-badge bg-emerald-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg">
             <ShieldCheck size={14} className="shrink-0" strokeWidth={2.5} />
             {dealLabel}
           </span>
@@ -89,8 +94,8 @@ export function PropertyCard({ property, compact = false }: { property: Property
           <span className="property-action"><Share2 size={16} /></span>
         </div>
         <div className="absolute bottom-3 left-3 z-10 flex items-center gap-2 text-white">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-xs font-black backdrop-blur">{initials(property.developer?.companyName)}</span>
-          <span className="text-xs font-bold">{property.developer?.companyName || "GroupBuying Partner"}</span>
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-sm font-bold backdrop-blur">{initials(property.developer?.companyName)}</span>
+          <span className="text-sm font-semibold tracking-tight">{property.developer?.companyName || "GroupBuying Partner"}</span>
         </div>
       </div>
 
@@ -104,18 +109,34 @@ export function PropertyCard({ property, compact = false }: { property: Property
         </div>
 
         <div className="rounded-[1rem] bg-[#fff3ef] p-3">
-          <div className="mb-2 flex items-center justify-between text-[11px] font-black text-[#b43b2a]"><span><Users className="mr-1 inline" size={13} /> Group buying in progress</span><span>Why group buying?</span></div>
-          <p className="text-xs font-bold text-emerald-700">↗ {joined} joined in the last month</p>
-          <p className="mt-1 text-center text-sm font-black text-[#111111]">{buying} families are purchasing apartments!</p>
+          <div className="mb-2 flex items-center justify-between text-xs font-bold text-[#b43b2a]"><span><Users className="mr-1 inline" size={14} /> Group buying in progress</span><span>Why group buying?</span></div>
+          <p className="text-sm font-semibold text-emerald-700">↗ {joined} joined in the last month</p>
+          <p className="mt-1 text-center text-[15px] font-bold text-[#111111]">{buying} families are purchasing apartments!</p>
           <div className="mt-3 flex items-center justify-center -space-x-2">
             {[1, 2, 3, 4].map((item) => <span key={item} className="h-8 w-8 rounded-full border-2 border-white bg-gradient-to-br from-[#e7d0c8] to-[#6f5b52] shadow-sm" />)}
-            <span className="ml-3 text-xs font-bold text-[#b43b2a]">You? Become {buying + 1}th member</span>
+            <span className="ml-3 text-sm font-semibold text-[#b43b2a]">You? Become {buying + 1}th member</span>
           </div>
         </div>
 
         <div className="mt-4 flex items-end justify-between">
-          <div><p className="text-xs font-bold text-slate-500">Target Price</p><p className="font-display text-2xl font-black text-[#111111]">{rangePrice(property.minPrice, compact ? null : property.maxPrice)}</p><p className="text-xs font-bold text-emerald-600">Upto 22.8L off</p></div>
-          <span className="rounded-xl bg-[#e34b32] px-4 py-3 text-xs font-black text-white shadow-lg transition group-hover:bg-[#111111]">Join Group</span>
+          <div className="flex flex-col">
+            <div className="flex items-start gap-4">
+              <div>
+                <p className="text-[13px] font-medium text-[#111111] mb-0.5">Target Price</p>
+                <p className="font-display text-2xl font-bold tracking-tight leading-none text-[#111111]">{rangePrice(property.minPrice, null)}</p>
+              </div>
+              {property.maxPrice && (
+                <div>
+                  <p className="text-[13px] font-medium text-[#111111] mb-0.5">Developer price</p>
+                  <p className="font-display text-[20px] font-medium text-[#848696] line-through tracking-tight leading-none">{rangePrice(property.maxPrice, null)}</p>
+                </div>
+              )}
+            </div>
+            <p className="text-[13px] mt-1.5 flex items-center gap-1.5 font-semibold text-emerald-600">
+              <RiDiscountPercentFill className="scale-110"/> Upto {discountPercent}% off
+            </p>
+          </div>
+          <span className="rounded-xl bg-[#e34b32] px-5 py-3.5 text-sm font-bold text-white shadow-lg transition hover:scale-105 group-hover:bg-[#111111]">Join Group</span>
         </div>
       </div>
     </Link>
