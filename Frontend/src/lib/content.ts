@@ -1,10 +1,15 @@
 export const navItems = [
+  { label: "Home", href: "/" },
   { label: "Properties", href: "/properties" },
-  { label: "Membership", href: "/subscribe" },
-  { label: "About Us", href: "/about" },
+  { label: "Subscription", href: "/subscribe" },
+  { label: "Contact Us", href: "/contact" },
+];
+
+export const resourceNavItems = [
+  { label: "Articles", href: "/blogs" },
   { label: "How It Works", href: "/how-it-works" },
+  { label: "About Us", href: "/about" },
   { label: "FAQs", href: "/faqs" },
-  { label: "Contact", href: "/contact" },
 ];
 
 export const stats = [

@@ -61,6 +61,8 @@ export const propertyBaseObject = z.object({
   totalUnits: z.coerce.number().int().nonnegative().optional().nullable(),
   isFeatured: z.coerce.boolean().optional().default(false),
   isPreLaunch: z.coerce.boolean().optional().default(false),
+  isFastSelling: z.coerce.boolean().optional().default(false),
+  isPromising: z.coerce.boolean().optional().default(false),
   metaTitle: z.string().optional().nullable(),
   metaDescription: z.string().optional().nullable(),
   highlights: z.array(z.string()).optional().default([]),

@@ -1,12 +1,12 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { Heart, Home, LogIn, Search } from "lucide-react";
+import { Heart, Home, LogIn, Newspaper, Search } from "lucide-react";
 
 const items = [
   { label: "Home", href: "/", icon: Home },
   { label: "Properties", href: "/properties", icon: Search },
-  { label: "Shortlisted", href: "/properties", icon: Heart },
+  { label: "Blogs", href: "/blogs", icon: Newspaper },
   { label: "Login", href: "/login", icon: LogIn },
 ];
 

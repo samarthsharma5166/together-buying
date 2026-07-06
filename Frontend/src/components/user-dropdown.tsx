@@ -40,12 +40,12 @@ export function UserDropdown() {
     <div className="relative inline-block text-left" ref={containerRef}>
       <button
         onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 p-1.5 pr-4 text-sm font-semibold text-slate-800 shadow-sm transition-all hover:bg-slate-50 hover:shadow-md focus:outline-none"
+        className="flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white/80 p-1 pr-2.5 text-xs font-semibold text-slate-800 shadow-sm transition-all hover:bg-slate-50 hover:shadow-md focus:outline-none xl:gap-2 xl:p-1.5 xl:pr-3.5 xl:text-sm"
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#fff3ef] text-xs font-black text-[#d9462e]">
-          {initials || <User size={14} />}
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#fff3ef] text-[10px] font-black text-[#d9462e] xl:h-8 xl:w-8 xl:text-xs">
+          {initials || <User size={13} />}
         </span>
-        <span className="hidden max-w-[120px] truncate md:block">
+        <span className="hidden max-w-[100px] truncate xl:block">
           {user.firstName} {user.lastName}
         </span>
         <ChevronDown size={14} className={`text-slate-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />

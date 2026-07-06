@@ -85,7 +85,6 @@ export const formatProperty = (property: any) => {
   
   return formatted;
 };
-1234
 
 /**
  * @desc Create a new property listing with nested units and images
@@ -395,6 +394,8 @@ export const listProperties = tryCatch(async (req: AuthenticatedRequest, res: Re
   const maxPrice = typeof req.query.maxPrice === "string" ? req.query.maxPrice : undefined;
   const isFeatured = typeof req.query.isFeatured === "string" ? req.query.isFeatured : undefined;
   const isPreLaunch = typeof req.query.isPreLaunch === "string" ? req.query.isPreLaunch : undefined;
+  const isFastSelling = typeof req.query.isFastSelling === "string" ? req.query.isFastSelling : undefined;
+  const isPromising = typeof req.query.isPromising === "string" ? req.query.isPromising : undefined;
   const search = typeof req.query.search === "string" ? req.query.search : undefined;
 
   // Build filter object
@@ -415,6 +416,8 @@ export const listProperties = tryCatch(async (req: AuthenticatedRequest, res: Re
   
   if (isFeatured) where.isFeatured = isFeatured === "true";
   if (isPreLaunch) where.isPreLaunch = isPreLaunch === "true";
+  if (isFastSelling) where.isFastSelling = isFastSelling === "true";
+  if (isPromising) where.isPromising = isPromising === "true";
 
   // Price range filters (handling BigInt translation)
   if (minPrice || maxPrice) {
@@ -427,12 +430,13 @@ export const listProperties = tryCatch(async (req: AuthenticatedRequest, res: Re
     }
   }
 
-  // Search filter (searches title and description)
+  // Search filter (searches title, description, locality & developer)
   if (search) {
     where.OR = [
       { title: { contains: search as string } },
       { description: { contains: search as string } },
       { locality: { contains: search as string } },
+      { developer: { companyName: { contains: search as string } } },
     ];
   }
 
@@ -620,7 +624,6 @@ export const getFeaturedProperties = tryCatch(async (req: AuthenticatedRequest, 
         },
       },
       images: {
-        take: 1,
         orderBy: { sortOrder: "asc" },
       },
       groups: {

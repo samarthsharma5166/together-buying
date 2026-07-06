@@ -24,7 +24,7 @@ const storage = multer.diskStorage({
 
 // File Filter (Image only)
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg", "image/gif"];
+  const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg", "image/gif", "image/heic", "image/heif", "image/avif"];
   
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
@@ -52,3 +52,29 @@ export const uploadDeveloperFiles = upload.fields([
 
 // Middleware specifically for uploading multiple property images
 export const uploadPropertyImages = upload.array("images", 10);
+
+// Hero section slides (larger limit for high-res property photos)
+const heroLimits = { fileSize: 15 * 1024 * 1024 };
+export const uploadHeroSlides = multer({ storage, fileFilter, limits: heroLimits }).array("images", 20);
+export const uploadHeroSlideImage = multer({ storage, fileFilter, limits: heroLimits }).single("image");
+export const uploadBlogCover = multer({ storage, fileFilter, limits: heroLimits }).single("coverImage");
+
+const videoFileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const imageTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg", "image/gif", "image/heic", "image/heif", "image/avif"];
+  const videoTypes = ["video/mp4", "video/webm", "video/quicktime", "video/ogg"];
+  if (imageTypes.includes(file.mimetype) || videoTypes.includes(file.mimetype)) {
+    cb(null, true);
+    return;
+  }
+  cb(new AppError("Only images or videos (mp4, webm, mov, ogg) are allowed", 400));
+};
+
+const showcaseLimits = { fileSize: 80 * 1024 * 1024 };
+export const uploadShowcaseVideoFiles = multer({
+  storage,
+  fileFilter: videoFileFilter,
+  limits: showcaseLimits,
+}).fields([
+  { name: "video", maxCount: 1 },
+  { name: "poster", maxCount: 1 },
+]);

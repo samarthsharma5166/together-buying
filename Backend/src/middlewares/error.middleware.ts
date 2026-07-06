@@ -18,6 +18,15 @@ const errorMiddleware = (error: any, req: Request, res: Response, next: NextFunc
   } else if (error.code === 'LIMIT_UNEXPECTED_FILE') {
     message = `Unexpected file field: "${error.field}". Please verify that this field name matches the accepted API parameters.`;
     statusCode = 400;
+  } else if (error.code === 'LIMIT_FILE_SIZE') {
+    message = 'Image is too large. Maximum allowed size is 15MB per image.';
+    statusCode = 400;
+  } else if (error.code === 'LIMIT_FILE_COUNT' || error.code === 'LIMIT_FIELD_KEY' || error.code === 'LIMIT_FIELD_VALUE' || error.code === 'LIMIT_FIELD_COUNT' || error.code === 'LIMIT_PART_COUNT') {
+    message = error.message || 'Upload limit exceeded.';
+    statusCode = 400;
+  } else if (error.statusCode) {
+    statusCode = error.statusCode;
+    message = error.message;
   }
 
   return res.status(statusCode).json({

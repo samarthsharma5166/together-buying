@@ -23,7 +23,10 @@ export function EmiCalculator() {
 
   return (
     <div className="rounded-[1.7rem] bg-white p-5 premium-border md:p-6">
-      <div className="mb-4 text-center"><p className="text-xs font-black uppercase tracking-[0.22em] text-[#e34b32]">EMI Calculator</p><h3 className="font-display text-3xl font-black text-[#111111]">Your Monthly Home EMI</h3></div>
+      <div className="mb-4 text-left">
+        <h3 className="font-display text-2xl font-black text-[#111111] md:text-3xl">EMI Calculator</h3>
+        <p className="mt-1 text-sm font-medium text-slate-600 md:text-base lg:whitespace-nowrap">Your Monthly Home EMI</p>
+      </div>
       <div className="grid items-center gap-5 lg:grid-cols-[1fr_240px]">
         <div className="grid gap-4">
           <label className="grid gap-2 text-xs font-bold text-slate-700">Loan Amount <span className="justify-self-end font-black text-[#111111]">{formatPrice(loan)}</span><input type="range" min="100000" max="130000000" step="100000" value={loan} onChange={(event) => setLoan(Number(event.target.value))} className="accent-[#e34b32]" /></label>

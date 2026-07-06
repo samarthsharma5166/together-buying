@@ -1,4 +1,5 @@
 import { api } from "@/lib/axios";
+import { citiesMatch } from "@/lib/locations";
 
 export type Developer = {
   id: string;
@@ -73,6 +74,8 @@ export type Property = {
   maxPrice?: string | number | null;
   isFeatured?: boolean;
   isPreLaunch?: boolean;
+  isFastSelling?: boolean;
+  isPromising?: boolean;
   developer?: Partial<Developer> | null;
   images?: PropertyImage[];
   units?: PropertyUnit[];
@@ -121,11 +124,20 @@ export type ApiItem<T> = { success?: boolean; data?: T };
 const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000/api").replace(/\/$/, "");
 const ASSET_BASE = API_BASE.replace(/\/api$/, "");
 
+const FALLBACK_IMAGE_SET = [
+  "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=900&q=80",
+];
+
 export const fallbackProperties: Property[] = [
-  { id: "godrej-miraya", title: "Godrej Miraya", slug: "godrej-miraya", description: "Premium residences with group buying benefits, curated inventory and developer-direct savings.", propertyType: "Apartment", possessionStatus: "New Launch", city: "Gurugram", locality: "Sector 43", minPrice: "52500000", maxPrice: "90000000", isFeatured: true, developer: { companyName: "Godrej Properties" }, units: [{ unitType: "3 BHK", superAreaSqft: 2800, price: "52500000" }, { unitType: "4 BHK", superAreaSqft: 3900, price: "74000000" }] },
-  { id: "dlf-privana", title: "DLF Privana", slug: "dlf-privana", description: "Luxury high-rise community with strong location fundamentals and group negotiation scope.", propertyType: "Luxury Apartment", possessionStatus: "Under Construction", city: "Gurugram", locality: "Sector 76", minPrice: "62000000", maxPrice: "115000000", isFeatured: true, developer: { companyName: "DLF" }, units: [{ unitType: "4 BHK", superAreaSqft: 3577, price: "62000000" }] },
-  { id: "m3m-altitude", title: "M3M Altitude", slug: "m3m-altitude", description: "Signature apartments with premium amenities and structured buyer-group offers.", propertyType: "Apartment", possessionStatus: "Pre Launch", city: "Gurugram", locality: "Sector 65", minPrice: "41000000", maxPrice: "78000000", isFeatured: false, isPreLaunch: true, developer: { companyName: "M3M India" }, units: [{ unitType: "3.5 BHK", superAreaSqft: 2500, price: "41000000" }] },
-  { id: "iris-broadway", title: "Trehan Iris Broadway", slug: "iris-broadway", description: "Fast-selling mixed-use destination with attractive entry pricing and buyer support.", propertyType: "Commercial", possessionStatus: "Ready To Move", city: "Noida", locality: "Sector 85", minPrice: "18000000", maxPrice: "35000000", developer: { companyName: "Trehan Iris" }, units: [{ unitType: "Retail", superAreaSqft: 850, price: "18000000" }] },
+  { id: "godrej-miraya", title: "Godrej Miraya", slug: "godrej-miraya", description: "Premium residences with group buying benefits.", propertyType: "Apartment", possessionStatus: "New Launch", city: "Gurugram", locality: "Sector 43", minPrice: "52500000", maxPrice: "90000000", isFeatured: true, isFastSelling: true, developer: { companyName: "Godrej Properties" }, images: FALLBACK_IMAGE_SET.map((url, i) => ({ imageUrl: url, sortOrder: i })), units: [{ unitType: "3 BHK", superAreaSqft: 2800, price: "52500000" }, { unitType: "4 BHK", superAreaSqft: 3900, price: "74000000" }] },
+  { id: "dlf-privana-west", title: "DLF Privana West", slug: "dlf-privana-west", description: "Luxury high-rise community with strong location fundamentals.", propertyType: "Luxury Apartment", possessionStatus: "Under Construction", city: "Gurugram", locality: "Sector 76", minPrice: "62000000", maxPrice: "115000000", isFeatured: true, isPromising: true, developer: { companyName: "DLF Limited" }, images: FALLBACK_IMAGE_SET.map((url, i) => ({ imageUrl: url, sortOrder: i })), units: [{ unitType: "4 BHK", superAreaSqft: 3577, price: "62000000" }] },
+  { id: "m3m-altitude", title: "M3M Altitude", slug: "m3m-altitude", description: "Signature apartments with premium amenities.", propertyType: "Apartment", possessionStatus: "Pre Launch", city: "Gurugram", locality: "Sector 65", minPrice: "41000000", maxPrice: "78000000", isFeatured: true, isPreLaunch: true, isFastSelling: true, developer: { companyName: "M3M India" }, images: FALLBACK_IMAGE_SET.map((url, i) => ({ imageUrl: url, sortOrder: i })), units: [{ unitType: "3.5 BHK", superAreaSqft: 2500, price: "41000000" }] },
+  { id: "emaar-urban-ascent", title: "Emaar Urban Ascent", slug: "emaar-urban-ascent", description: "Golf course extension living with pre-launch potential.", propertyType: "Apartment", possessionStatus: "New Launch", city: "Gurugram", locality: "Golf Course Extension", minPrice: "33500000", maxPrice: "68000000", isFeatured: true, isPreLaunch: true, isPromising: true, developer: { companyName: "Emaar India" }, images: FALLBACK_IMAGE_SET.map((url, i) => ({ imageUrl: url, sortOrder: i })), units: [{ unitType: "3 BHK", superAreaSqft: 2100, price: "33500000" }] },
+  { id: "trehan-iris-broadway", title: "Trehan Iris Broadway", slug: "trehan-iris-broadway", description: "Fast-selling mixed-use destination.", propertyType: "Commercial", possessionStatus: "Ready To Move", city: "Noida", locality: "Sector 85", minPrice: "18000000", maxPrice: "35000000", isFastSelling: true, developer: { companyName: "Trehan Iris" }, images: FALLBACK_IMAGE_SET.map((url, i) => ({ imageUrl: url, sortOrder: i })), units: [{ unitType: "Retail", superAreaSqft: 850, price: "18000000" }] },
+  { id: "signature-titanium-spr", title: "Signature Titanium SPR", slug: "signature-titanium-spr", description: "SPR corridor apartments with group discount scope.", propertyType: "Apartment", possessionStatus: "Under Construction", city: "Gurugram", locality: "SPR", minPrice: "28500000", maxPrice: "52000000", isFeatured: true, developer: { companyName: "Signature Global" }, images: FALLBACK_IMAGE_SET.map((url, i) => ({ imageUrl: url, sortOrder: i })), units: [{ unitType: "3 BHK", superAreaSqft: 1900, price: "28500000" }] },
+  { id: "whiteland-blissville", title: "Whiteland Blissville", slug: "whiteland-blissville", description: "Ready-to-move homes in Sector 76.", propertyType: "Apartment", possessionStatus: "Ready To Move", city: "Gurugram", locality: "Sector 76", minPrice: "22500000", maxPrice: "43000000", isPromising: true, developer: { companyName: "Whiteland Corporation" }, images: FALLBACK_IMAGE_SET.map((url, i) => ({ imageUrl: url, sortOrder: i })), units: [{ unitType: "2 BHK", superAreaSqft: 1400, price: "22500000" }, { unitType: "3 BHK", superAreaSqft: 2050, price: "33000000" }] },
 ];
 
 export const fallbackDevelopers: Developer[] = [
@@ -150,11 +162,36 @@ export function getAssetUrl(image?: string | null) {
   return `${ASSET_BASE}/uploads/${image.replace(/^\/+/, "")}`;
 }
 
+const PROPERTY_CAROUSEL_FALLBACKS = [
+  "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=900&q=80",
+  "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=900&q=80",
+];
+
+export function getPropertyCarouselImages(property: Property): string[] {
+  const urls = [
+    ...(property.images || []).map((img) => getAssetUrl(img.imageUrl)),
+    ...(property.units || []).flatMap((unit) => (unit.images || []).map((img) => getAssetUrl(img.imageUrl))),
+  ].filter((url): url is string => Boolean(url));
+
+  const unique = [...new Set(urls)];
+  if (unique.length >= 2) return unique;
+  if (unique.length === 1) {
+    return [unique[0], ...PROPERTY_CAROUSEL_FALLBACKS.filter((url) => url !== unique[0]).slice(0, 2)];
+  }
+  return PROPERTY_CAROUSEL_FALLBACKS;
+}
+
 function filterFallbackProperties(params?: Record<string, string | number | boolean | undefined>) {
-  const city = String(params?.city || "").toLowerCase();
-  const propertyType = String(params?.propertyType || "").toLowerCase();
+  const city = String(params?.city || "");
+  const locality = String(params?.locality || "").toLowerCase();
+  const propertyType = String(params?.propertyType || "").toUpperCase();
   const maxPrice = Number(params?.maxPrice || 0);
   const search = String(params?.search || "").toLowerCase();
+  const isFeatured = params?.isFeatured === true || params?.isFeatured === "true";
+  const isPreLaunch = params?.isPreLaunch === true || params?.isPreLaunch === "true";
+  const isFastSelling = params?.isFastSelling === true || params?.isFastSelling === "true";
+  const isPromising = params?.isPromising === true || params?.isPromising === "true";
 
   return fallbackProperties.filter((property) => {
     const text = [
@@ -166,11 +203,18 @@ function filterFallbackProperties(params?: Record<string, string | number | bool
       ...(property.units || []).map((unit) => unit.unitType),
     ].filter(Boolean).join(" ").toLowerCase();
     const price = Number(property.minPrice || 0);
+    const propType = (property.propertyType || "").toLowerCase();
 
-    if (city && property.city?.toLowerCase() !== city) return false;
-    if (propertyType && property.propertyType?.toLowerCase() !== propertyType) return false;
+    if (city && !citiesMatch(property.city, city)) return false;
+    if (locality && !property.locality?.toLowerCase().includes(locality)) return false;
+    if (propertyType === "COMMERCIAL" && propType !== "commercial") return false;
+    if (propertyType === "RESIDENTIAL" && propType === "commercial") return false;
     if (maxPrice && price > maxPrice) return false;
     if (search && !text.includes(search)) return false;
+    if (isFeatured && !property.isFeatured) return false;
+    if (isPreLaunch && !property.isPreLaunch) return false;
+    if (isFastSelling && !property.isFastSelling) return false;
+    if (isPromising && !property.isPromising) return false;
     return true;
   });
 }
@@ -187,7 +231,12 @@ export async function getProperties(params?: Record<string, string | number | bo
 
 export async function getFeaturedProperties() {
   const result = await safeFetch<ApiList<Property>>("/properties/featured");
-  return result?.data?.length ? result.data : fallbackProperties.slice(0, 3);
+  return result?.data?.length ? result.data : fallbackProperties.filter((item) => item.isFeatured).slice(0, 3);
+}
+
+export async function getHomeSectionProperties(flag: "isFastSelling" | "isPreLaunch" | "isFeatured" | "isPromising", limit = 3) {
+  const result = await getProperties({ [flag]: true, limit });
+  return result.properties.slice(0, limit);
 }
 
 export async function getProperty(idOrSlug: string, cookieHeader?: string) {
@@ -214,8 +263,13 @@ export async function getProperty(idOrSlug: string, cookieHeader?: string) {
 }
 
 export async function getDevelopers() {
-  const result = await safeFetch<ApiList<Developer>>("/developers?limit=24");
+  const result = await safeFetch<ApiList<Developer>>("/developers?limit=30&status=ACTIVE");
   return result?.data?.length ? result.data : fallbackDevelopers;
+}
+
+export async function getPartnerDevelopers() {
+  const developers = await getDevelopers();
+  return developers.filter((item) => item.partnershipStatus !== "TERMINATED" && item.partnershipStatus !== "SUSPENDED");
 }
 
 export async function authRequest(path: "/auth/login" | "/auth/register", body: Record<string, string>) {
@@ -573,8 +627,251 @@ export async function getUserGroups(): Promise<ApiList<PropertyGroup>> {
   return response.data;
 }
 
+export type HeroSlide = {
+  id: string;
+  imageUrl: string;
+  caption?: string | null;
+  tagLabel?: string;
+  tagAmount?: string;
+  tagSubtext?: string;
+  sortOrder?: number;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
 
+export type HeroSlideTags = {
+  tagLabel?: string;
+  tagAmount?: string;
+  tagSubtext?: string;
+};
 
+export async function getHeroSlides(): Promise<HeroSlide[]> {
+  const payload = await safeFetch<ApiItem<HeroSlide[]>>("/hero-slides");
+  return (payload?.data || []).map((slide) => ({
+    ...slide,
+    imageUrl: getAssetUrl(slide.imageUrl) || slide.imageUrl,
+  }));
+}
 
+export async function getHeroSlidesAdmin(): Promise<HeroSlide[]> {
+  const response = await api.get("/hero-slides/admin");
+  return response.data?.data || [];
+}
+
+export async function uploadHeroSlides(
+  files: File[],
+  options?: HeroSlideTags & { caption?: string; slideTags?: HeroSlideTags[] }
+): Promise<HeroSlide[]> {
+  const formData = new FormData();
+  files.forEach((file) => formData.append("images", file));
+  if (options?.caption) formData.append("caption", options.caption);
+  if (options?.tagLabel) formData.append("tagLabel", options.tagLabel);
+  if (options?.tagAmount) formData.append("tagAmount", options.tagAmount);
+  if (options?.tagSubtext) formData.append("tagSubtext", options.tagSubtext);
+  if (options?.slideTags?.length) formData.append("slideTags", JSON.stringify(options.slideTags));
+  const response = await api.post("/hero-slides", formData);
+  if (!response.data?.success) throw new Error(response.data?.message || "Upload failed");
+  return response.data.data;
+}
+
+export async function updateHeroSlide(
+  id: string,
+  data: HeroSlideTags & { caption?: string; sortOrder?: number; isActive?: boolean; image?: File }
+): Promise<HeroSlide> {
+  const formData = new FormData();
+  if (data.caption !== undefined) formData.append("caption", data.caption);
+  if (data.tagLabel !== undefined) formData.append("tagLabel", data.tagLabel);
+  if (data.tagAmount !== undefined) formData.append("tagAmount", data.tagAmount);
+  if (data.tagSubtext !== undefined) formData.append("tagSubtext", data.tagSubtext);
+  if (data.sortOrder !== undefined) formData.append("sortOrder", String(data.sortOrder));
+  if (data.isActive !== undefined) formData.append("isActive", String(data.isActive));
+  if (data.image) formData.append("image", data.image);
+  const response = await api.patch(`/hero-slides/${id}`, formData);
+  if (!response.data?.success) throw new Error(response.data?.message || "Update failed");
+  return response.data.data;
+}
+
+export async function deleteHeroSlide(id: string): Promise<boolean> {
+  const response = await api.delete(`/hero-slides/${id}`);
+  return response.data?.success || false;
+}
+
+export type ShowcaseVideo = {
+  id: string;
+  title: string;
+  subtitle: string;
+  videoUrl: string;
+  posterUrl: string;
+  sortOrder?: number;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export async function getShowcaseVideos(): Promise<ShowcaseVideo[]> {
+  const payload = await safeFetch<ApiItem<ShowcaseVideo[]>>("/showcase-videos");
+  return (payload?.data || []).map((video) => ({
+    ...video,
+    videoUrl: getAssetUrl(video.videoUrl) || video.videoUrl,
+    posterUrl: getAssetUrl(video.posterUrl) || video.posterUrl,
+  }));
+}
+
+export async function getShowcaseVideosAdmin(): Promise<ShowcaseVideo[]> {
+  const response = await api.get("/showcase-videos/admin");
+  return response.data?.data || [];
+}
+
+export async function createShowcaseVideo(data: {
+  title: string;
+  subtitle: string;
+  sortOrder?: number;
+  video?: File;
+  poster?: File;
+  videoUrl?: string;
+  posterUrl?: string;
+}): Promise<ShowcaseVideo> {
+  const formData = new FormData();
+  formData.append("title", data.title);
+  formData.append("subtitle", data.subtitle);
+  if (data.sortOrder !== undefined) formData.append("sortOrder", String(data.sortOrder));
+  if (data.video) formData.append("video", data.video);
+  if (data.poster) formData.append("poster", data.poster);
+  if (data.videoUrl) formData.append("videoUrl", data.videoUrl);
+  if (data.posterUrl) formData.append("posterUrl", data.posterUrl);
+  const response = await api.post("/showcase-videos", formData);
+  if (!response.data?.success) throw new Error(response.data?.message || "Create failed");
+  return response.data.data;
+}
+
+export async function updateShowcaseVideo(
+  id: string,
+  data: {
+    title?: string;
+    subtitle?: string;
+    sortOrder?: number;
+    isActive?: boolean;
+    video?: File;
+    poster?: File;
+    videoUrl?: string;
+    posterUrl?: string;
+  }
+): Promise<ShowcaseVideo> {
+  const formData = new FormData();
+  if (data.title !== undefined) formData.append("title", data.title);
+  if (data.subtitle !== undefined) formData.append("subtitle", data.subtitle);
+  if (data.sortOrder !== undefined) formData.append("sortOrder", String(data.sortOrder));
+  if (data.isActive !== undefined) formData.append("isActive", String(data.isActive));
+  if (data.video) formData.append("video", data.video);
+  if (data.poster) formData.append("poster", data.poster);
+  if (data.videoUrl) formData.append("videoUrl", data.videoUrl);
+  if (data.posterUrl) formData.append("posterUrl", data.posterUrl);
+  const response = await api.patch(`/showcase-videos/${id}`, formData);
+  if (!response.data?.success) throw new Error(response.data?.message || "Update failed");
+  return response.data.data;
+}
+
+export async function deleteShowcaseVideo(id: string): Promise<boolean> {
+  const response = await api.delete(`/showcase-videos/${id}`);
+  return response.data?.success || false;
+}
+
+export type BlogAuthor = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl?: string | null;
+  role?: string;
+};
+
+export type Blog = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt?: string | null;
+  content?: string;
+  coverImageUrl?: string | null;
+  category: string;
+  readTimeMin: number;
+  isPublished?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  author?: BlogAuthor;
+};
+
+function mapBlogCover(blog: Blog): Blog {
+  return {
+    ...blog,
+    coverImageUrl: blog.coverImageUrl ? getAssetUrl(blog.coverImageUrl) || blog.coverImageUrl : null,
+  };
+}
+
+export async function getBlogs(): Promise<Blog[]> {
+  const payload = await safeFetch<ApiItem<Blog[]>>("/blogs");
+  return (payload?.data || []).map(mapBlogCover);
+}
+
+export async function getBlogBySlug(slug: string): Promise<Blog | null> {
+  const payload = await safeFetch<ApiItem<Blog>>(`/blogs/${slug}`);
+  return payload?.data ? mapBlogCover(payload.data) : null;
+}
+
+export async function getBlogsAdmin(): Promise<Blog[]> {
+  const response = await api.get("/blogs/admin");
+  return response.data?.data || [];
+}
+
+export async function createBlog(data: {
+  title: string;
+  excerpt?: string;
+  content: string;
+  category?: string;
+  readTimeMin?: number;
+  isPublished?: boolean;
+  coverImage?: File;
+}): Promise<Blog> {
+  const formData = new FormData();
+  formData.append("title", data.title);
+  formData.append("content", data.content);
+  if (data.excerpt) formData.append("excerpt", data.excerpt);
+  if (data.category) formData.append("category", data.category);
+  if (data.readTimeMin !== undefined) formData.append("readTimeMin", String(data.readTimeMin));
+  if (data.isPublished !== undefined) formData.append("isPublished", String(data.isPublished));
+  if (data.coverImage) formData.append("coverImage", data.coverImage);
+  const response = await api.post("/blogs", formData);
+  if (!response.data?.success) throw new Error(response.data?.message || "Create failed");
+  return response.data.data;
+}
+
+export async function updateBlog(
+  id: string,
+  data: {
+    title?: string;
+    excerpt?: string;
+    content?: string;
+    category?: string;
+    readTimeMin?: number;
+    isPublished?: boolean;
+    coverImage?: File;
+  }
+): Promise<Blog> {
+  const formData = new FormData();
+  if (data.title !== undefined) formData.append("title", data.title);
+  if (data.excerpt !== undefined) formData.append("excerpt", data.excerpt);
+  if (data.content !== undefined) formData.append("content", data.content);
+  if (data.category !== undefined) formData.append("category", data.category);
+  if (data.readTimeMin !== undefined) formData.append("readTimeMin", String(data.readTimeMin));
+  if (data.isPublished !== undefined) formData.append("isPublished", String(data.isPublished));
+  if (data.coverImage) formData.append("coverImage", data.coverImage);
+  const response = await api.patch(`/blogs/${id}`, formData);
+  if (!response.data?.success) throw new Error(response.data?.message || "Update failed");
+  return response.data.data;
+}
+
+export async function deleteBlog(id: string): Promise<boolean> {
+  const response = await api.delete(`/blogs/${id}`);
+  return response.data?.success || false;
+}
 
 

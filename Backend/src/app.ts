@@ -11,6 +11,9 @@ import groupRouter from './routes/group.routes.js'
 import subscriptionPlanRouter from './routes/subscriptionPlan.routes.js'
 import subscriptionRouter from './routes/subscription.routes.js'
 import transectionRouter from './routes/transection.routes.js'
+import heroSlideRouter from './routes/heroSlide.routes.js'
+import showcaseVideoRouter from './routes/showcaseVideo.routes.js'
+import blogRouter from './routes/blog.routes.js'
 
 // middleware import
 import cookieParser from 'cookie-parser'
@@ -53,6 +56,9 @@ app.use("/api/groups", groupRouter)
 app.use("/api/subscription-plans", subscriptionPlanRouter)
 app.use("/api/subscriptions", subscriptionRouter)
 app.use("/api/transections", transectionRouter)
+app.use("/api/hero-slides", heroSlideRouter)
+app.use("/api/showcase-videos", showcaseVideoRouter)
+app.use("/api/blogs", blogRouter)
 
 
 
