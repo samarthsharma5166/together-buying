@@ -17,6 +17,7 @@ export default async function PropertiesPage({ searchParams }: Props) {
   const params = await searchParams;
   const query = {
     city: value(params, "city"),
+    locality: value(params, "locality"),
     propertyType: value(params, "propertyType"),
     minPrice: value(params, "minPrice"),
     maxPrice: value(params, "maxPrice"),

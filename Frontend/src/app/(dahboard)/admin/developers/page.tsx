@@ -111,6 +111,8 @@ export default function AdminDevelopersPage() {
     setDescription("");
     setReraRegistered(false);
     setPartnershipStatus("ACTIVE");
+    setLogo(null);
+    setBanner(null);
     dispatch(clearFormError());
     setModalOpen(true);
   };
@@ -202,7 +204,9 @@ export default function AdminDevelopersPage() {
           <p className="text-xs font-black uppercase tracking-widest text-[#e34b32]">Developer Partnerships</p>
           <h1 className="font-display text-3xl font-black text-slate-800 mt-1">Developers Management</h1>
 
-          <p className="text-sm text-slate-500 mt-1">Manage real estate developers, partnership statuses, and verify RERA profiles.</p>
+          <p className="text-sm text-slate-500 mt-1">
+            Manage real estate developers, partnership statuses, and verify RERA profiles. Active partners with logos appear on the homepage partners section.
+          </p>
         </div>
         <button
           onClick={openCreateModal}

@@ -8,7 +8,7 @@ export default function LoginPage() {
     const user = useAppSelector(state => state.auth.user)
   
     if(user){
-      if (user.role== "ADMIN"){
+      if (user.role === "ADMIN" || user.role === "SUPER_ADMIN"){
         redirect('/admin/dashboard')
       }else{
         redirect('/')

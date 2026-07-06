@@ -275,8 +275,11 @@ const propertySlice = createSlice({
       state.formSubmitting = true;
       state.formError = null;
     });
-    builder.addCase(updateProperty.fulfilled, (state) => {
+    builder.addCase(updateProperty.fulfilled, (state, action: PayloadAction<Property>) => {
       state.formSubmitting = false;
+      state.properties = state.properties.map((p) =>
+        p.id === action.payload.id ? { ...p, ...action.payload } : p
+      );
     });
     builder.addCase(updateProperty.rejected, (state, action) => {
       state.formSubmitting = false;

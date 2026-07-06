@@ -1,21 +1,64 @@
 "use client";
 
 import Link from "next/link";
-import { Heart, MapPin, Phone, Repeat2, Share2, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Heart, MapPin, Phone, Repeat2, Share2, ShieldCheck, Users } from "lucide-react";
 import type { Property } from "@/lib/api";
-import { getAssetUrl } from "@/lib/api";
+import { getPropertyCarouselImages } from "@/lib/api";
 import { initials, rangePrice } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { openSubscriptionModal } from "@/store/slices/subscriptionSlice";
+import { cn } from "@/lib/utils";
+
+function PropertyImageCarousel({ images }: { images: string[] }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (images.length <= 1) return;
+    const timer = window.setInterval(() => {
+      setIndex((current) => (current + 1) % images.length);
+    }, 3500);
+    return () => window.clearInterval(timer);
+  }, [images.length]);
+
+  return (
+    <>
+      {images.map((src, slideIndex) => (
+        <div
+          key={`${src}-${slideIndex}`}
+          className={cn(
+            "property-card-carousel-slide absolute inset-0 bg-cover bg-center",
+            slideIndex === index ? "opacity-100" : "opacity-0"
+          )}
+          style={{ backgroundImage: `url(${src})` }}
+        />
+      ))}
+      {images.length > 1 && (
+        <div className="absolute bottom-3 right-3 flex gap-1.5">
+          {images.map((_, dotIndex) => (
+            <span
+              key={dotIndex}
+              className={cn(
+                "h-1.5 rounded-full transition-all duration-300",
+                dotIndex === index ? "w-4 bg-white" : "w-1.5 bg-white/50"
+              )}
+            />
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
 
 export function PropertyCard({ property, compact = false }: { property: Property; compact?: boolean }) {
   const user = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
 
-  const image = getAssetUrl(property.images?.[0]?.imageUrl);
+  const carouselImages = useMemo(() => getPropertyCarouselImages(property), [property]);
   const href = `/properties/${property.slug || property.id}`;
   const joined = property.isPreLaunch ? 4 : property.isFeatured ? 7 : 2;
   const buying = property.isPreLaunch ? 5 : property.isFeatured ? 4 : 3;
+  const dealLabel = property.isPreLaunch ? "Pre Launch" : property.isFeatured ? "Exclusive Deal" : "Verified Deal";
 
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const isPremium = !!(user && (user.role === "BUYER_PREMIUM" || user.role === "RM" || user.role === "ADMIN" || user.role === "SUPER_ADMIN"));
@@ -27,18 +70,25 @@ export function PropertyCard({ property, compact = false }: { property: Property
 
   return (
     <Link href={href} onClick={handleClick} className="group magnetic-card hover-lift block overflow-hidden rounded-[1.65rem] bg-white p-3 premium-border">
-      <div className="relative h-44 overflow-hidden rounded-[1.1rem] bg-gradient-to-br from-[#e34b32] via-[#f36a4b] to-[#111111]">
-        {image ? <div className="absolute inset-0 bg-cover bg-center transition duration-500 group-hover:scale-105" style={{ backgroundImage: `url(${image})` }} /> : <div className="absolute inset-0 hero-grid opacity-50" />}
+      <div className="relative h-44 overflow-hidden rounded-[1.1rem] bg-gradient-to-br from-slate-700 via-slate-800 to-[#111111]">
+        {carouselImages.length > 0 ? (
+          <PropertyImageCarousel images={carouselImages} />
+        ) : (
+          <div className="absolute inset-0 hero-grid opacity-50" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
-        <div className="absolute left-0 top-4 flex flex-wrap gap-2">
-          <span className="ribbon-badge bg-[#e34b32] px-4 py-1 text-xs font-black uppercase text-white shadow-lg">{property.isPreLaunch ? "Pre Launch" : property.isFeatured ? "Exclusive Deal" : "Verified Deal"}</span>
+        <div className="absolute left-3 top-3 z-10">
+          <span className="ribbon-badge bg-emerald-600 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-white shadow-lg">
+            <ShieldCheck size={14} className="shrink-0" strokeWidth={2.5} />
+            {dealLabel}
+          </span>
         </div>
-        <div className="absolute right-3 top-3 grid gap-2">
+        <div className="absolute right-3 top-3 z-10 grid gap-2">
           <span className="property-action"><Heart size={17} /></span>
           <span className="property-action"><Repeat2 size={16} /></span>
           <span className="property-action"><Share2 size={16} /></span>
         </div>
-        <div className="absolute bottom-3 left-3 flex items-center gap-2 text-white">
+        <div className="absolute bottom-3 left-3 z-10 flex items-center gap-2 text-white">
           <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-xs font-black backdrop-blur">{initials(property.developer?.companyName)}</span>
           <span className="text-xs font-bold">{property.developer?.companyName || "GroupBuying Partner"}</span>
         </div>
@@ -71,4 +121,3 @@ export function PropertyCard({ property, compact = false }: { property: Property
     </Link>
   );
 }
-

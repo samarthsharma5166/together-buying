@@ -1,4 +1,5 @@
-﻿import { ArrowRight, BadgeCheck, BarChart3, Building2, CalendarDays, CheckCircle2, Gift, MapPin, Play, Radar, ShieldCheck, Sparkles, Zap } from "lucide-react";
+import { ArrowRight, BadgeCheck, Building2, CalendarDays, CheckCircle2, Gift, MapPin, Play, ShieldCheck, Sparkles } from "lucide-react";
+import Link from "next/link";
 import { AnimatedCounter } from "@/components/animated-counter";
 import { ButtonLink } from "@/components/button";
 import { CalculatorShowcase } from "@/components/calculator-showcase";
@@ -6,122 +7,163 @@ import { ContactForm } from "@/components/contact-form";
 import { FAQAccordion } from "@/components/faq-accordion";
 import { PropertyCard } from "@/components/property-card";
 import { PartnerLogoGrid } from "@/components/partner-logo-grid";
-import { PropertySearchFilter } from "@/components/property-search-filter";
 import { ReviewStrip } from "@/components/review-strip";
 import { Section } from "@/components/section";
 import { StepTimeline } from "@/components/step-timeline";
 import { VideoShowcase } from "@/components/video-showcase";
-import { articles, faqs, partnerNames, stats, steps, testimonials, valueCards } from "@/lib/content";
-import { getDevelopers, getFeaturedProperties } from "@/lib/api";
+import { articles, faqs, stats, steps, testimonials, valueCards } from "@/lib/content";
+import { getFeaturedProperties, getHeroSlides, getHomeSectionProperties, getBlogs, getPartnerDevelopers, getShowcaseVideos } from "@/lib/api";
+import { HeroImageCarousel } from "@/components/hero-image-carousel";
+import { HeroToolCards } from "@/components/hero-tool-cards";
 
 export default async function HomePage() {
-  const [featured, developers] = await Promise.all([getFeaturedProperties(), getDevelopers()]);
-  const partners = developers.length ? developers.map((item) => item.companyName) : partnerNames;
-  const videoCards = ["Luxury project walkthrough", "Live virtual site visit", "Buyer savings story", "Inventory comparison"];
+  const [fastSelling, preLaunch, featured, promising, partnerDevelopers, heroSlides, blogs, showcaseVideos] = await Promise.all([
+    getHomeSectionProperties("isFastSelling"),
+    getHomeSectionProperties("isPreLaunch"),
+    getFeaturedProperties(),
+    getHomeSectionProperties("isPromising"),
+    getPartnerDevelopers(),
+    getHeroSlides(),
+    getBlogs(),
+    getShowcaseVideos(),
+  ]);
   const propertyGroups = [
-    { title: "Fast Selling Properties", text: "High-demand projects with live buyer activity.", items: featured.slice(0, 3) },
-    { title: "Featured Properties", text: "Curated premium inventory for group negotiation.", items: featured.slice(0, 3) },
-    { title: "Pre Launch Properties", text: "Early access projects with stronger saving potential.", items: featured.filter((item) => item.isPreLaunch).concat(featured).slice(0, 3) },
-  ];
+    { title: "Fast Selling Properties", text: "High-demand projects with live buyer activity.", items: fastSelling },
+    { title: "Pre Launch Properties", text: "Early access projects with stronger saving potential.", items: preLaunch },
+    { title: "Featured Properties", text: "Curated premium inventory for group negotiation.", items: featured },
+    { title: "Promising Plots / Villas", text: "Handpicked plot and villa projects with strong appreciation potential.", items: promising },
+  ].filter((group) => group.items.length > 0);
 
-  return (
+  return (    
     <main>
-      <section className="hero-premium-bg relative overflow-hidden pb-12 pt-8 md:pb-18 md:pt-12">
-        <div className="absolute -left-20 top-20 h-72 w-72 rounded-full bg-[#e34b32]/20 blur-3xl" />
-        <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-[#111111]/10 blur-3xl" />
-        <div className="glow-blob green left-1/3 top-24" />
-        <div className="glow-blob blue right-20 top-56" />
-        <div className="glow-blob gold bottom-24 left-16" />
-        <div className="container-shell grid items-center gap-12 lg:grid-cols-[1.03fr_.97fr]">
-          <div className="reveal-up">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-2 text-sm font-black text-[#df432c] shadow-sm">
-              <Sparkles size={17} /> India's First Group Buying Real Estate Platform
+      <section className="bg-white relative overflow-hidden pb-10 pt-8 sm:pb-14 sm:pt-10 md:pb-16 md:pt-12 lg:pb-20 lg:pt-14">
+        <div className="pointer-events-none absolute -left-20 top-20 hidden h-72 w-72 rounded-full bg-[#e34b32]/20 blur-3xl sm:block" />
+        <div className="pointer-events-none absolute right-0 top-0 hidden h-96 w-96 rounded-full bg-[#111111]/10 blur-3xl md:block" />
+        <div className="glow-blob green left-1/3 top-24 hidden sm:block" />
+        <div className="glow-blob blue right-20 top-56 hidden lg:block" />
+        <div className="glow-blob gold bottom-24 left-16 hidden md:block" />
+        <div
+          className={`container-shell grid min-w-0 grid-cols-1 items-center gap-6 sm:gap-8${heroSlides.length > 0 ? " lg:grid-cols-[1.15fr_0.85fr] xl:grid-cols-[1.2fr_0.8fr]" : ""
+            }`}
+        >
+          <div className="reveal-up w-full min-w-0 text-center sm:text-left">
+            <div className="mb-4 flex justify-center sm:justify-start">
+              <div className="animate-badge-highlight inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-2 text-xs font-black text-[#df432c] shadow-sm sm:text-base md:text-base">
+                 Looking to buy your Dream Property?
+              </div>
             </div>
-            <h1 className="font-display shimmer-text text-5xl font-black leading-[1.02] tracking-tight md:text-6xl">
-              Looking to buy your <span className="gradient-text">Dream Home?</span>
+            <h1 className="mx-auto max-w-full font-display text-[clamp(2rem,7vw,2.75rem)] font-black leading-[1.15] tracking-tight text-balance sm:mx-0 sm:text-[clamp(2.25rem,5vw,3.25rem)] md:text-[clamp(2.5rem,4.2vw,3.5rem)] lg:text-[clamp(2.5rem,3.2vw,3.5rem)] lg:leading-[1.1] xl:text-[clamp(3rem,3.5vw,4.25rem)]">
+              <span className="shimmer-text">Together we Bargain</span>{" "}
+              <span className="gradient-text">Better</span>
             </h1>
-            <p className="mt-4 font-display text-2xl font-extrabold text-[#df432c] md:text-3xl">Pay Less Together</p>
-            <p className="mt-4 max-w-2xl text-base leading-8 text-slate-600">Get group buying discounts plus 100% broker commission cashback. Join 3-7 serious buyers and negotiate directly with developers.</p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row"><ButtonLink href="/properties">Explore Properties <ArrowRight size={18} /></ButtonLink><ButtonLink href="/how-it-works" variant="secondary"><Play size={18} /> How it works</ButtonLink></div>
-            <div className="mt-6 grid max-w-2xl gap-3 sm:grid-cols-3">
-              {["5-10% Extra Discount", "3-5% Cashback", "Lifetime Membership"].map((item) => <div key={item} className="soft-card tilt-card rounded-[1.4rem] p-4 text-sm font-black text-[#111111]"><CheckCircle2 className="mb-2 text-[#e34b32]" size={20} />{item}</div>)}
+            <p className="mt-4 font-display text-2xl font-black text-[#df432c] sm:text-3xl md:text-2xl">
+              Group Up & Save More!
+            </p>
+              <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:mx-0 sm:text-lg md:text-xl md:leading-7">
+                Get Group Buying Discount + 100% Broker Commission Cashback</p>
+              <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-slate-600 sm:mx-0 sm:text-lg md:text-xl md:leading-7">
+                Join 3-7 intrested buyers and negotiate directly with developers
+              </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-start">
+              <ButtonLink href="/properties" className="w-full !px-6 !py-3.5 !text-base sm:w-auto">
+                Explore Properties <ArrowRight size={20} />
+              </ButtonLink>
+              <ButtonLink href="/how-it-works" variant="secondary" className="w-full !px-6 !py-3.5 !text-base sm:w-auto">
+                <Play size={18} /> How it works ?
+              </ButtonLink>
             </div>
-          </div>
-
-          <div className="relative min-h-[460px]">
-            <div className="floating absolute left-0 top-8 z-30 rounded-[1.5rem] bg-white p-4 shadow-2xl"><p className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">We've saved</p><p className="font-display text-3xl font-black text-[#df432c]">₹25Cr+</p><p className="text-xs font-bold text-slate-500">for 150+ families</p></div>
-            <div className="animated-border absolute left-8 right-8 top-10 overflow-hidden rounded-[3rem] bg-gradient-to-br from-[#e34b32] via-[#111111] to-[#111111] p-4 shadow-[0_35px_100px_rgba(7,31,53,.28)] md:left-12 md:right-10">
-              <div className="relative min-h-[390px] overflow-hidden rounded-[2.4rem] bg-white/10 p-5 text-white backdrop-blur">
-                <div className="absolute inset-x-10 top-10 h-40 rounded-[2rem] bg-white/12 blur-2xl" />
-                <div className="absolute inset-0">
-                  <div className="hero-3d-building absolute left-6 right-6 top-8 z-10 h-72 overflow-hidden rounded-[2.4rem] border border-white/35 bg-cover bg-center shadow-[0_38px_105px_rgba(0,0,0,.42)] md:left-10 md:right-4 md:h-80" style={{ backgroundImage: "url(https://images.unsplash.com/photo-1600607688969-a5bfcd646154?auto=format&fit=crop&w=1300&q=92)" }}>
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/0 via-transparent to-[#111111]/38" />
-                  </div>
-                  <div className="absolute -bottom-8 left-4 h-32 w-52 rounded-[2rem] bg-cover bg-center opacity-80 shadow-[0_22px_55px_rgba(0,0,0,.24)] blur-[.4px]" style={{ backgroundImage: "url(https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=88)" }} />
+            <div className="mx-auto mt-6 grid w-full max-w-2xl grid-cols-1 gap-3 min-[420px]:grid-cols-3 sm:mx-0">
+              {["5-15% Extra Discount", "3-10% Cashback", "Lifetime Membership"].map((item) => (
+                <div
+                  key={item}
+                  className="soft-card tilt-card flex items-center gap-3 rounded-2xl p-4 text-sm font-black leading-tight text-[#111111] min-[420px]:block sm:p-5 sm:text-base"
+                >
+                  <CheckCircle2 className="shrink-0 text-[#e34b32] min-[420px]:mb-2" size={22} />
+                  {item}
                 </div>
-                <div className="absolute inset-0 bg-gradient-to-br from-[#111111]/12 via-white/8 to-[#e34b32]/18" />
-              </div>
+              ))}
             </div>
           </div>
-        </div>
 
-        <div className="container-shell -mb-24 mt-8 relative z-20">
-          <PropertySearchFilter />
-        </div>
-      </section>
-
-      <section className="relative -mt-10 z-30 pb-8">
-        <div className="container-shell">
-          <div className="animated-border grid gap-4 rounded-[2.2rem] p-1 md:grid-cols-3">
-            {[
-              { icon: Radar, title: "Live Group Signals", text: "Track buyer interest, project demand and best entry timing." },
-              { icon: BarChart3, title: "Savings Intelligence", text: "Compare market quote, group offer and cashback upside." },
-              { icon: Zap, title: "Instant RM Action", text: "Shortlist, site visit and negotiation support without delay." },
-            ].map(({ icon: Icon, title, text }) => (
-              <div key={title} className="stagger-card rounded-[2rem] bg-white/95 p-6 shadow-sm backdrop-blur">
-                <Icon className="mb-4 text-[#e34b32]" size={32} />
-                <h3 className="font-display text-xl font-black text-[#111111]">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600">{text}</p>
+          {heroSlides.length > 0 && (
+            <div className="reveal-up mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-3 lg:mx-0 lg:max-w-none">
+              <div className="flex justify-center lg:justify-start">
+                <div className="inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-2 text-[10px] font-black text-[#df432c] shadow-sm whitespace-nowrap min-[375px]:text-xs sm:text-sm md:text-base">
+                   India's 1st AI Powered Group Buying Real Estate Platform!
+                </div>
               </div>
-            ))}
-          </div>
+              <HeroImageCarousel slides={heroSlides} />
+            </div>
+          )}
         </div>
       </section>
 
-      <Section className="pt-32" eyebrow="Shared dreams. Smart ownership." title="Buyers on GroupBuying save 10-15% more" description="We negotiate directly with developers as a group, unlock prices usually reserved for institutions, and pass back broker commission as extra savings.">
+      <HeroToolCards />
+
+      <Section className="pt-12 sm:pt-14 lg:pt-16" eyebrow="Shared dreams. Smart ownership." title="Buyers on GroupBuying save 10-15% more" description="We negotiate directly with developers as a group, unlock prices usually reserved for institutions, and pass back broker commission as extra savings.">
         <div className="grid gap-4 md:grid-cols-4">{stats.map((stat) => <div key={stat.label} className="stagger-card magnetic-card hover-lift rounded-[1.75rem] bg-white p-6 text-center premium-border"><p className="font-display text-4xl font-black text-[#df432c]"><AnimatedCounter value={stat.value} /></p><p className="mt-2 text-sm font-bold text-slate-500">{stat.label}</p></div>)}</div>
       </Section>
 
-      <Section eyebrow="Explore Projects Through Video" title="Explore Projects Through Video" description="Experience our handpicked real estate projects through immersive video tours.">
-        <VideoShowcase videos={videoCards} />
+      {propertyGroups.map((group) => (
+        <Section key={group.title} eyebrow={group.title} title={group.text} headingAlign="left">
+          <div className="mb-6 flex justify-end"><ButtonLink href="/properties" variant="secondary">view all <ArrowRight size={18} /></ButtonLink></div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{group.items.map((property, index) => <PropertyCard key={`${group.title}-${property.id}-${index}`} property={property} />)}</div>
+        </Section>
+      ))}
+
+      <Section className="overflow-visible bg-[#fff6f2] py-8 md:py-10 [&_.mb-8]:mb-4" eyebrow="Explore Projects Through Video" title="Explore Projects Through Video" description="Experience our handpicked real estate projects through immersive video tours.">
+        <VideoShowcase videos={showcaseVideos} />
       </Section>
 
       <Section id="about" className="bg-[#fff6f2]" eyebrow="Why GroupBuying" title="Unlock unbeatable deals through group buying">
         <div className="grid gap-5 md:grid-cols-3">{valueCards.map((card) => <div key={card.title} className="stagger-card magnetic-card hover-lift rounded-[2rem] bg-white p-7 premium-border"><div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff3ef] text-[#e34b32]"><Gift /></div><p className="font-display text-2xl font-black text-[#111111]">{card.title}</p><p className="mt-3 text-sm leading-7 text-slate-600">{card.text}</p><p className="mt-5 rounded-full bg-[#111111] px-4 py-2 text-center text-sm font-black text-white">{card.metric}</p></div>)}</div>
       </Section>
 
-      {propertyGroups.map((group) => (
-        <Section key={group.title} eyebrow={group.title} title={group.text}>
-          <div className="mb-6 flex justify-end"><ButtonLink href="/properties" variant="secondary">view all <ArrowRight size={18} /></ButtonLink></div>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{group.items.map((property, index) => <PropertyCard key={`${group.title}-${property.id}-${index}`} property={property} />)}</div>
-        </Section>
-      ))}
-
-      <Section className="bg-[#fff6f2]" eyebrow="Calculate Savings" title="Save more and more with GroupBuying">
+      <Section id="calculators" className="bg-[#fff6f2]" eyebrow="Calculate Savings" title="Save more and more with GroupBuying">
         <CalculatorShowcase />
       </Section>
 
       <Section className="py-10 md:py-14" eyebrow="Our Top Developer Partners" title="Our Top Developer Partners">
-        <PartnerLogoGrid partners={partners.concat(partnerNames)} />
+        <PartnerLogoGrid developers={partnerDevelopers} />
       </Section>
 
-      <Section id="how-it-works" eyebrow="How Does GroupBuying Work?" title="Follow the simple 5 steps to your dream home">
+      <Section id="how-it-works" eyebrow="How GroupBuying Works?" title="Follow the simple 5 steps to your dream home">
         <StepTimeline steps={steps} />
       </Section>
 
       <Section className="real-estate-story-bg text-white" eyebrow="Case Studies" title="Real estate success stories: transforming spaces">
         <ReviewStrip testimonials={testimonials} />
-        <div className="mt-8 grid gap-4 md:grid-cols-3">{articles.map((article) => <div key={article} className="rounded-[1.5rem] bg-white p-5 text-[#111111]"><p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#df432c]">Read More</p><h3 className="font-display text-lg font-black">{article}</h3><p className="mt-4 flex items-center gap-2 text-xs font-bold text-slate-500"><CalendarDays size={15} /> Updated case study</p></div>)}</div>
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+          {blogs.length > 0
+            ? blogs.slice(0, 3).map((blog) => (
+              <Link
+                key={blog.id}
+                href={`/blogs/${blog.slug}`}
+                className="rounded-[1.5rem] bg-white p-5 text-[#111111] transition hover:-translate-y-1 hover:shadow-xl"
+              >
+                <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#df432c]">Read More</p>
+                <h3 className="font-display text-lg font-black">{blog.title}</h3>
+                <p className="mt-4 flex items-center gap-2 text-xs font-bold text-slate-500">
+                  <CalendarDays size={15} />
+                  {new Date(blog.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                </p>
+              </Link>
+            ))
+            : articles.map((article) => (
+              <div key={article} className="rounded-[1.5rem] bg-white p-5 text-[#111111]">
+                <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#df432c]">Read More</p>
+                <h3 className="font-display text-lg font-black">{article}</h3>
+                <p className="mt-4 flex items-center gap-2 text-xs font-bold text-slate-500">
+                  <CalendarDays size={15} /> Updated case study
+                </p>
+              </div>
+            ))}
+        </div>
+        {blogs.length > 0 && (
+          <div className="mt-6 flex justify-center">
+            <ButtonLink href="/blogs" variant="secondary">View all blogs <ArrowRight size={18} /></ButtonLink>
+          </div>
+        )}
       </Section>
 
       <Section id="faqs" eyebrow="FAQs" title="You have questions. We have answers."><FAQAccordion items={faqs} /></Section>

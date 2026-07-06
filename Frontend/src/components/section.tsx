@@ -6,24 +6,39 @@ type SectionProps = HTMLAttributes<HTMLElement> & {
   eyebrow?: string;
   title?: string;
   description?: string;
+  headingAlign?: "left" | "center";
   children: ReactNode;
 };
 
-export function Section({ eyebrow, title, children, className, description, ...props }: SectionProps) {
+export function Section({ eyebrow, title, children, className, description, headingAlign = "center", ...props }: SectionProps) {
+  const mainHeading = eyebrow || title;
+  const subHeading = eyebrow && title && eyebrow !== title ? title : undefined;
+  const isLeft = headingAlign === "left";
+
   return (
     <section className={cn("py-12 md:py-18", className)} {...props}>
       <div className="container-shell">
-        {(eyebrow || title || description) && (
-          <Reveal className="mx-auto mb-8 max-w-3xl text-center">
-            {eyebrow && <p className="mb-2 text-xs font-bold uppercase tracking-[0.28em] text-[#e34b32]">{eyebrow}</p>}
-            {title && <h2 className="font-display text-3xl font-extrabold tracking-tight text-current md:text-4xl">{title}</h2>}
-            {description && <p className="mt-3 text-sm leading-7 text-slate-600 md:text-base">{description}</p>}
+        {(mainHeading || description) && (
+          <Reveal className={cn("mb-8 max-w-5xl", isLeft ? "text-left" : "mx-auto text-center")}>
+            {mainHeading && (
+              <h2 className="font-display text-3xl font-extrabold tracking-tight text-current md:text-4xl lg:text-[2.5rem] lg:leading-tight">
+                {mainHeading}
+              </h2>
+            )}
+            {subHeading && (
+              <p className="mt-2 text-sm font-medium leading-6 text-current/70 sm:text-base lg:whitespace-nowrap">
+                {subHeading}
+              </p>
+            )}
+            {description && (
+              <p className={cn("mt-3 max-w-3xl text-sm leading-7 text-current/65 md:text-base", !isLeft && "mx-auto")}>{description}</p>
+            )}
           </Reveal>
         )}
-        <Reveal delay={0.08}>{children}</Reveal>
+        <Reveal delay={0.08} className="overflow-visible">
+          {children}
+        </Reveal>
       </div>
     </section>
   );
 }
-
-

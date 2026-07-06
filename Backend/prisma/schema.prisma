@@ -8,7 +8,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -107,6 +107,7 @@ model User {
   groupMembership   GroupMembers?
   subscriptions     subscription[]
   transactions      transections[]
+  blogs             Blog[]
 
   @@map("users")
 }
@@ -145,6 +146,8 @@ model Property {
 
   isFeatured          Boolean @default(false)
   isPreLaunch         Boolean @default(false)
+  isFastSelling       Boolean @default(false) @map("is_fast_selling")
+  isPromising         Boolean @default(false) @map("is_promising")
 
   metaTitle           String?
   metaDescription     String?
@@ -408,4 +411,51 @@ model transections{
   user          User     @relation(fields: [userId],references: [id],onDelete: Cascade)
 
   @@map("transections")
+}
+
+model HeroSlide {
+  id         String   @id @default(uuid())
+  imageUrl   String   @map("image_url")
+  caption    String?
+  tagLabel   String   @default("We've saved") @map("tag_label")
+  tagAmount  String   @default("₹25Cr+") @map("tag_amount")
+  tagSubtext String   @default("for 150+ families") @map("tag_subtext")
+  sortOrder  Int      @default(0) @map("sort_order")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("hero_slides")
+}
+
+model ShowcaseVideo {
+  id         String   @id @default(uuid())
+  title      String
+  subtitle   String
+  videoUrl   String   @map("video_url")
+  posterUrl  String   @map("poster_url")
+  sortOrder  Int      @default(0) @map("sort_order")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("showcase_videos")
+}
+
+model Blog {
+  id            String   @id @default(uuid())
+  title         String
+  slug          String   @unique
+  excerpt       String?  @db.Text
+  content       String   @db.LongText
+  coverImageUrl String?  @map("cover_image_url")
+  category      String   @default("General")
+  readTimeMin   Int      @default(5) @map("read_time_min")
+  isPublished   Boolean  @default(false) @map("is_published")
+  authorId      String   @map("author_id")
+  author        User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("blogs")
 }

@@ -126,6 +126,8 @@ export default function AdminPropertiesPage() {
   const [totalUnits, setTotalUnits] = useState("");
   const [isFeatured, setIsFeatured] = useState(false);
   const [isPreLaunch, setIsPreLaunch] = useState(false);
+  const [isFastSelling, setIsFastSelling] = useState(false);
+  const [isPromising, setIsPromising] = useState(false);
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [metaTitle, setMetaTitle] = useState("");
@@ -280,6 +282,8 @@ export default function AdminPropertiesPage() {
     setTotalUnits("");
     setIsFeatured(false);
     setIsPreLaunch(false);
+    setIsFastSelling(false);
+    setIsPromising(false);
     setLatitude("");
     setLongitude("");
     setMetaTitle("");
@@ -328,6 +332,8 @@ export default function AdminPropertiesPage() {
     setTotalUnits(prop.totalUnits ? String(prop.totalUnits) : "");
     setIsFeatured(prop.isFeatured || false);
     setIsPreLaunch(prop.isPreLaunch || false);
+    setIsFastSelling(prop.isFastSelling || false);
+    setIsPromising(prop.isPromising || false);
     setLatitude(prop.latitude ? String(prop.latitude) : "");
     setLongitude(prop.longitude ? String(prop.longitude) : "");
     setMetaTitle(prop.metaTitle || "");
@@ -398,6 +404,8 @@ export default function AdminPropertiesPage() {
       maxPrice: String(maxPrice),
       isFeatured,
       isPreLaunch,
+      isFastSelling,
+      isPromising,
       units: formattedUnits,
       highlights,
       amenities,
@@ -453,6 +461,18 @@ export default function AdminPropertiesPage() {
       await dispatch(togglePropertyFeatured({ id, isFeatured: !currentVal })).unwrap();
     } catch (err) {
       alert("Failed to toggle featured status: " + err);
+    }
+  };
+
+  const handleToggleSectionFlag = async (
+    id: string,
+    field: "isFastSelling" | "isPromising" | "isPreLaunch",
+    currentVal: boolean
+  ) => {
+    try {
+      await dispatch(updateProperty({ id, body: { [field]: !currentVal } })).unwrap();
+    } catch (err) {
+      alert(`Failed to toggle ${field}: ` + err);
     }
   };
 
@@ -789,19 +809,56 @@ export default function AdminPropertiesPage() {
                   </div>
 
                   {/* Actions area */}
-                  <div className="mt-6 pt-4 border-t border-slate-100/80 flex items-center justify-between">
-                    {/* Toggle Featured */}
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id={`featured-${prop.id}`}
-                        checked={prop.isFeatured || false}
-                        onChange={() => handleToggleFeatured(prop.id, prop.isFeatured || false)}
-                        className="h-4 w-4 text-[#e34b32] border-slate-300 rounded focus:ring-0 cursor-pointer"
-                      />
-                      <label htmlFor={`featured-${prop.id}`} className="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">
-                        Featured
-                      </label>
+                  <div className="mt-6 pt-4 border-t border-slate-100/80 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={`featured-${prop.id}`}
+                          checked={prop.isFeatured || false}
+                          onChange={() => handleToggleFeatured(prop.id, prop.isFeatured || false)}
+                          className="h-4 w-4 text-[#e34b32] border-slate-300 rounded focus:ring-0 cursor-pointer"
+                        />
+                        <label htmlFor={`featured-${prop.id}`} className="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">
+                          Featured
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={`fast-selling-${prop.id}`}
+                          checked={prop.isFastSelling || false}
+                          onChange={() => handleToggleSectionFlag(prop.id, "isFastSelling", prop.isFastSelling || false)}
+                          className="h-4 w-4 text-[#e34b32] border-slate-300 rounded focus:ring-0 cursor-pointer"
+                        />
+                        <label htmlFor={`fast-selling-${prop.id}`} className="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">
+                          Fast Selling
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={`prelaunch-${prop.id}`}
+                          checked={prop.isPreLaunch || false}
+                          onChange={() => handleToggleSectionFlag(prop.id, "isPreLaunch", prop.isPreLaunch || false)}
+                          className="h-4 w-4 text-[#e34b32] border-slate-300 rounded focus:ring-0 cursor-pointer"
+                        />
+                        <label htmlFor={`prelaunch-${prop.id}`} className="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">
+                          Pre Launch
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={`promising-${prop.id}`}
+                          checked={prop.isPromising || false}
+                          onChange={() => handleToggleSectionFlag(prop.id, "isPromising", prop.isPromising || false)}
+                          className="h-4 w-4 text-[#e34b32] border-slate-300 rounded focus:ring-0 cursor-pointer"
+                        />
+                        <label htmlFor={`promising-${prop.id}`} className="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">
+                          Promising
+                        </label>
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-1">
@@ -1107,7 +1164,19 @@ export default function AdminPropertiesPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                <div className="flex flex-wrap gap-4 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="featured"
+                      checked={isFeatured}
+                      onChange={(e) => setIsFeatured(e.target.checked)}
+                      className="h-4.5 w-4.5 text-[#e34b32] border-slate-300 rounded cursor-pointer"
+                    />
+                    <label htmlFor="featured" className="text-xs font-black uppercase text-slate-600 cursor-pointer">
+                      Featured
+                    </label>
+                  </div>
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -1117,7 +1186,31 @@ export default function AdminPropertiesPage() {
                       className="h-4.5 w-4.5 text-[#e34b32] border-slate-300 rounded cursor-pointer"
                     />
                     <label htmlFor="prelaunch" className="text-xs font-black uppercase text-slate-600 cursor-pointer">
-                      Pre Launch Status
+                      Pre Launch
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="fast-selling"
+                      checked={isFastSelling}
+                      onChange={(e) => setIsFastSelling(e.target.checked)}
+                      className="h-4.5 w-4.5 text-[#e34b32] border-slate-300 rounded cursor-pointer"
+                    />
+                    <label htmlFor="fast-selling" className="text-xs font-black uppercase text-slate-600 cursor-pointer">
+                      Fast Selling
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="promising"
+                      checked={isPromising}
+                      onChange={(e) => setIsPromising(e.target.checked)}
+                      className="h-4.5 w-4.5 text-[#e34b32] border-slate-300 rounded cursor-pointer"
+                    />
+                    <label htmlFor="promising" className="text-xs font-black uppercase text-slate-600 cursor-pointer">
+                      Promising Plots / Villas
                     </label>
                   </div>
                 </div>
