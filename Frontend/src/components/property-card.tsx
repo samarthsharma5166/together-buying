@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MapPin, Phone, Repeat2, Share2, ShieldCheck, Users } from "lucide-react";
 import type { Property } from "@/lib/api";
 import { getPropertyCarouselImages } from "@/lib/api";
@@ -48,6 +49,47 @@ function PropertyImageCarousel({ images }: { images: string[] }) {
         </div>
       )}
     </>
+  );
+}
+
+function DiscountFlipper({ amount, percent }: { amount: string | number; percent: string | number }) {
+  const [showAmount, setShowAmount] = useState(true);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setShowAmount((prev) => !prev);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="relative h-5 overflow-hidden w-[180px] flex items-center">
+      <AnimatePresence mode="wait">
+        {showAmount ? (
+          <motion.div
+            key="amount"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute left-0 text-[13px] flex items-center gap-1.5 font-semibold text-emerald-600"
+          >
+            Upto {amount} off
+          </motion.div>
+        ) : (
+          <motion.div
+            key="percent"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -20, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute left-0 text-[13px] flex items-center gap-1.5 font-semibold text-emerald-600"
+          >
+            <RiDiscountPercentFill className="scale-110"/> Upto {percent}% off
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -132,9 +174,9 @@ export function PropertyCard({ property, compact = false }: { property: Property
                 </div>
               )}
             </div>
-            <p className="text-[13px] mt-1.5 flex items-center gap-1.5 font-semibold text-emerald-600">
-              <RiDiscountPercentFill className="scale-110"/> Upto {discountPercent}% off
-            </p>
+            <div className="mt-1.5">
+              <DiscountFlipper amount={formatedDiscountAmount} percent={discountPercent} />
+            </div>
           </div>
           <span className="rounded-xl bg-[#e34b32] px-5 py-3.5 text-sm font-bold text-white shadow-lg transition hover:scale-105 group-hover:bg-[#111111]">Join Group</span>
         </div>

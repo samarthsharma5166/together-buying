@@ -43,7 +43,7 @@ export function BulkDealsDropdown({ className, onNavigate, variant = "navbar" }:
   if (variant === "mobile") {
     return (
       <div className={cn("grid gap-1", className)}>
-        <p className="px-4 py-1 text-xs font-black uppercase tracking-wider text-slate-400">Bulk Deals</p>
+        <p className="px-4 py-1 text-xs font-bold uppercase tracking-wider text-slate-400">Bulk Deals</p>
         {items.map(({ label, href, icon: Icon }) => (
           <Link
             key={href}
