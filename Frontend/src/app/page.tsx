@@ -59,9 +59,9 @@ export default async function HomePage() {
             <p className="mt-4 font-display text-2xl font-black text-[#df432c] sm:text-3xl md:text-2xl">
               Group Up & Save More!
             </p>
-            <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:mx-0 sm:text-lg md:text-xl md:leading-7">
+            <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:mx-0 sm:text-lg  md:leading-7">
               Get Group Buying Discount + 100% Broker Commission Cashback</p>
-            <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-slate-600 sm:mx-0 sm:text-lg md:text-xl md:leading-7">
+            <p className="mx-auto mt-1 max-w-2xl text-base leading-2 text-slate-600 sm:mx-0 sm:text-lg md:leading-7">
               Join 3-7 intrested buyers and negotiate directly with developers
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-start">
@@ -88,7 +88,7 @@ export default async function HomePage() {
           {heroSlides.length > 0 && (
             <div className="reveal-up mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-3 lg:mx-0 lg:max-w-none">
               <div className="flex justify-center lg:justify-start">
-                <div className="inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-2 text-[10px] font-black text-[#df432c] shadow-sm whitespace-nowrap min-[375px]:text-xs sm:text-sm md:text-base">
+                <div className="shine-badge inline-flex items-center gap-2 rounded-full border border-orange-100 bg-white px-4 py-2 text-[10px] font-black text-[#df432c] shadow-sm whitespace-nowrap min-[375px]:text-xs sm:text-sm md:text-base">
                   India's 1st AI Powered Group Buying Real Estate Platform!
                 </div>
               </div>

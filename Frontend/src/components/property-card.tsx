@@ -11,6 +11,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { openSubscriptionModal } from "@/store/slices/subscriptionSlice";
 import { cn } from "@/lib/utils";
 import { RiDiscountPercentFill } from "react-icons/ri";
+import CardTag from "./CardTag";
 
 function PropertyImageCarousel({ images }: { images: string[] }) {
   const [index, setIndex] = useState(0);
@@ -124,12 +125,7 @@ export function PropertyCard({ property, compact = false }: { property: Property
           <div className="absolute inset-0 hero-grid opacity-50" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
-        <div className="absolute left-3 top-3 z-10">
-          <span className="ribbon-badge bg-emerald-600 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg">
-            <ShieldCheck size={14} className="shrink-0" strokeWidth={2.5} />
-            {dealLabel}
-          </span>
-        </div>
+        <CardTag dealLabel={property.possessionStatus as "PRE_LAUNCH" | "UNDER_CONSTRUCTION" | "READY_TO_MOVE"}/>
         <div className="absolute right-3 top-3 z-10 grid gap-2">
           <span className="property-action"><Heart size={17} /></span>
           <span className="property-action"><Repeat2 size={16} /></span>
