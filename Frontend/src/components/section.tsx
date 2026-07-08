@@ -1,18 +1,18 @@
-﻿import type { HTMLAttributes, ReactNode } from "react";
+import type { HTMLAttributes, ReactNode } from "react";
 import { Reveal } from "@/components/reveal";
 import { cn } from "@/lib/utils";
 
 type SectionProps = HTMLAttributes<HTMLElement> & {
-  eyebrow?: string;
-  title?: string;
-  description?: string;
+  eyebrow?: ReactNode;
+  title?: ReactNode;
+  description?: ReactNode;
   headingAlign?: "left" | "center";
   children: ReactNode;
 };
 
 export function Section({ eyebrow, title, children, className, description, headingAlign = "center", ...props }: SectionProps) {
-  const mainHeading = eyebrow || title;
-  const subHeading = eyebrow && title && eyebrow !== title ? title : undefined;
+  const mainHeading = title || eyebrow;
+  const subHeading = eyebrow && title && eyebrow !== title ? eyebrow : undefined;
   const isLeft = headingAlign === "left";
 
   return (

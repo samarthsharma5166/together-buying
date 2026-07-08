@@ -1,6 +1,7 @@
 import { ArrowRight, BadgeCheck, Building2, CalendarDays, CheckCircle2, Gift, MapPin, Play, ShieldCheck, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { AnimatedCounter } from "@/components/animated-counter";
+import { HighlightedHeading } from "@/components/highlighted-heading";
 import { ButtonLink } from "@/components/button";
 import { CalculatorShowcase } from "@/components/calculator-showcase";
 import { ContactForm } from "@/components/contact-form";
@@ -118,7 +119,10 @@ export default async function HomePage() {
         <CalculatorShowcase />
       </Section>
 
-      <Section className="py-10 md:py-14" eyebrow="Our Top Developer Partners" title="Our Top Developer Partners">
+      <Section 
+        className="py-10 md:py-14" 
+        title={<HighlightedHeading before="Our" highlight="Top Developer" after="Partners" />}
+      >
         <PartnerLogoGrid developers={partnerDevelopers} />
       </Section>
 
