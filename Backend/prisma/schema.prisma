@@ -106,6 +106,8 @@ model User {
   subscriptions     subscription[]
   transactions      transections[]
   blogs             Blog[]
+  leads             leads[]
+  leadNotes         LeadNote[]
   @@map("users")
 }
 
@@ -453,7 +455,12 @@ model Blog {
 
 enum leadStatus {
   NEW
-  IN_PROGRESS
+  CONTACTED
+  FOLLOW_UP
+  SITE_VISIT
+  NEGOTIATION
+  BOOKED
+  LOST
   CLOSED
 }
 
@@ -462,13 +469,42 @@ enum leadPurpose {
   SELL
 }
 
+enum leadPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
 model leads {
-  id      String       @id @default(uuid())
-  name    String?
-  email   String?
-  phone   String?
-  purpose leadPurpose?
-  status  leadStatus   @default(NEW)
+  id           String        @id @default(uuid())
+  name         String?
+  email        String?
+  phone        String?
+  rmId         String?
+  rm           User?         @relation(fields: [rmId], references: [id], onDelete: Cascade)
+  purpose      leadPurpose?
+  status       leadStatus    @default(NEW)
+  priority     leadPriority  @default(MEDIUM)
+  project      String?
+  city         String?
+  source       String?
+  followUpDate DateTime?     @map("follow_up_date")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  notes        LeadNote[]
 
   @@map("leads")
+}
+
+model LeadNote {
+  id        String   @id @default(uuid())
+  text      String   @db.Text
+  leadId    String   @map("lead_id")
+  lead      leads    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  authorId  String   @map("author_id")
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("lead_notes")
 }

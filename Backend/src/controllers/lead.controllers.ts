@@ -15,12 +15,31 @@ export const createLead = tryCatch(async (req: Request, res: Response) => {
     throw new AppError("Please provide a name and at least one contact method (email or phone).", 400);
   }
 
+  // Find the RM with the least number of assigned leads to distribute evenly
+  const rms = await prisma.user.findMany({
+    where: { role: "RM" },
+    include: {
+      _count: {
+        select: { leads: true },
+      },
+    },
+    orderBy: {
+      leads: {
+        _count: "asc",
+      },
+    },
+    take: 1,
+  });
+
+  const assignedRmId = rms.length > 0 ? rms[0].id : null;
+
   const newLead = await prisma.leads.create({
     data: {
       name,
       email,
       phone,
       purpose: purpose || null,
+      rmId: assignedRmId,
     },
   });
 
