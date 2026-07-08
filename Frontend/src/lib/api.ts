@@ -83,6 +83,7 @@ export type Property = {
   updatedAt?: string | Date | null;
   groups?: PropertyGroup[];
   isLockedPlaceholder?: boolean;
+  views?: number;
 };
 
 export type PropertyGroup = {
@@ -239,10 +240,11 @@ export async function getHomeSectionProperties(flag: "isFastSelling" | "isPreLau
   return result.properties.slice(0, limit);
 }
 
-export async function getProperty(idOrSlug: string, cookieHeader?: string) {
+export async function getProperty(idOrSlug: string, cookieHeader?: string, skipViewIncrement = false) {
   try {
     const headers = cookieHeader ? { Cookie: cookieHeader } : undefined;
-    const response = await api.get(`/properties/${idOrSlug}`, { headers });
+    const url = `/properties/${idOrSlug}${skipViewIncrement ? "?skipViewIncrement=true" : ""}`;
+    const response = await api.get(url, { headers });
     return response.data?.data || fallbackProperties.find((item) => item.slug === idOrSlug || item.id === idOrSlug) || null;
   } catch (error: any) {
     console.warn(`getProperty API call failed for ${idOrSlug}:`, error.response?.status || error.message);

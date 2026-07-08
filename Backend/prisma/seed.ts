@@ -110,6 +110,7 @@ async function main() {
         isPreLaunch,
         isFastSelling: faker.datatype.boolean(),
         isPromising,
+        views: faker.number.int({ min: 500, max: 2000 }),
         developerId,
         createdById: admin.id,
         reraNumber: `RERA-${faker.string.alphanumeric(8).toUpperCase()}`,

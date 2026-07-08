@@ -149,6 +149,8 @@ model Property {
   isFastSelling       Boolean @default(false) @map("is_fast_selling")
   isPromising         Boolean @default(false) @map("is_promising")
 
+  views               Int     @default(0)
+
   metaTitle           String?
   metaDescription     String?
 

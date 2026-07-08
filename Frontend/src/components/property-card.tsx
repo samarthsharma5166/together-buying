@@ -12,6 +12,7 @@ import { openSubscriptionModal } from "@/store/slices/subscriptionSlice";
 import { cn } from "@/lib/utils";
 import { RiDiscountPercentFill } from "react-icons/ri";
 import CardTag from "./CardTag";
+import { useRouter } from "next/navigation";
 
 function PropertyImageCarousel({ images }: { images: string[] }) {
   const [index, setIndex] = useState(0);
@@ -97,11 +98,11 @@ function DiscountFlipper({ amount, percent }: { amount: string | number; percent
 export function PropertyCard({ property, compact = false }: { property: Property; compact?: boolean }) {
   const user = useAppSelector((state) => state.auth.user);
   const dispatch = useAppDispatch();
-
   const { discountPercent, formatedDiscountAmount } = useMemo(() => {
     return calculateDiscount(Number(property.minPrice || 0), Number(property.maxPrice || 0))
   }, [property.minPrice, property.maxPrice]);
 
+  const router = useRouter();
   const carouselImages = useMemo(() => getPropertyCarouselImages(property), [property]);
   const href = `/properties/${property.slug || property.id}`;
   const joined = property.isPreLaunch ? 4 : property.isFeatured ? 7 : 2;
@@ -175,6 +176,11 @@ export function PropertyCard({ property, compact = false }: { property: Property
             </div>
           </div>
           <span className="rounded-xl bg-[#e34b32] px-5 py-3.5 text-sm font-bold text-white shadow-lg transition hover:scale-105 group-hover:bg-[#111111]">Join Group</span>
+        </div>
+
+        <div className="mt-4 pt-3 flex items-center justify-between text-[11px] font-semibold text-[#e34b32] border-t border-red-100/50">
+          <span>Get upto {discountPercent}% discount on this property</span>
+          <span>{property.views || 0} buyers viewed this project</span>
         </div>
       </div>
     </Link>

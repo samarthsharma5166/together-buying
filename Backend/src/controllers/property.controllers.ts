@@ -252,6 +252,14 @@ export const getProperty = tryCatch(async (req: AuthenticatedRequest, res: Respo
     throw new AppError("Property listing not found", 404);
   }
 
+  // Increment views in the background unless skipped (e.g., during metadata generation)
+  if (req.query.skipViewIncrement !== "true") {
+    prisma.property.update({
+      where: { id: property.id },
+      data: { views: { increment: 1 } },
+    }).catch((err) => console.error("Failed to increment views:", err));
+  }
+
   return res.status(200).json({
     success: true,
     data: serializeBigInt(formatProperty(property)),

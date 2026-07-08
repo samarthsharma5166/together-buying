@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: Props) {
   const { slug } = await params;
   const cookieStore = await cookies();
   const cookieHeader = cookieStore.toString();
-  const property = await getProperty(slug, cookieHeader);
+  const property = await getProperty(slug, cookieHeader, true);
   
   if (!property) {
     return {

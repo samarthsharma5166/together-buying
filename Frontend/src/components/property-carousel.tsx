@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { PropertyCard } from "./property-card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { Property } from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 type Props = {
   properties: Property[];
@@ -13,11 +14,16 @@ type Props = {
 export function PropertyCarousel({ properties, groupTitle }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
+  
+  // Drag-to-scroll state
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [dragMoved, setDragMoved] = useState(false);
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
       const container = scrollRef.current;
-      // Scroll by exactly the container's client width to swipe all visible cards at once
       const scrollAmount = container.clientWidth;
       const targetLeft = direction === "left" 
         ? container.scrollLeft - scrollAmount 
@@ -27,27 +33,52 @@ export function PropertyCarousel({ properties, groupTitle }: Props) {
     }
   };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    setIsDragging(true);
+    setDragMoved(false);
+    setStartX(e.pageX - scrollRef.current.offsetLeft);
+    setScrollLeft(scrollRef.current.scrollLeft);
+  };
+
+  const handleMouseLeaveDrag = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    if (Math.abs(x - startX) > 5) {
+      setDragMoved(true);
+    }
+    const walk = (x - startX) * 2; // scroll speed multiplier
+    scrollRef.current.scrollLeft = scrollLeft - walk;
+  };
+
   // Infinite auto-swipe animation
   useEffect(() => {
-    if (properties.length <= 3 || isHovered) return;
+    // Disable auto-play while dragging or hovering
+    if (properties.length <= 3 || isHovered || isDragging) return;
 
     const timer = setInterval(() => {
       if (scrollRef.current) {
         const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
         
-        // If we reached the end (with a small 10px buffer for sub-pixel rounding)
         if (Math.ceil(scrollLeft + clientWidth) >= scrollWidth - 10) {
-          // Loop back to the start
           scrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
         } else {
-          // Swipe to the next set of cards
           scrollRef.current.scrollBy({ left: clientWidth, behavior: "smooth" });
         }
       }
-    }, 4000); // Swipe every 4 seconds
+    }, 4000);
 
     return () => clearInterval(timer);
-  }, [properties.length, isHovered]);
+  }, [properties.length, isHovered, isDragging]);
 
   return (
     <div 
@@ -57,15 +88,25 @@ export function PropertyCarousel({ properties, groupTitle }: Props) {
     >
       <div 
         ref={scrollRef}
-        // Removed outer negative margins to ensure the flex container exactly matches the grid bounds,
-        // making the 3 cards perfectly fill 100% of the width with zero bleed for a 4th card.
-        className="flex gap-6 overflow-x-auto snap-x snap-mandatory pb-4 pt-2 [&::-webkit-scrollbar]:hidden"
+        onMouseDown={handleMouseDown}
+        onMouseLeave={handleMouseLeaveDrag}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
+        onClickCapture={(e) => {
+          if (dragMoved) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }}
+        className={cn(
+          "flex gap-6 overflow-x-auto pb-4 pt-2 [&::-webkit-scrollbar]:hidden",
+          isDragging ? "cursor-grabbing snap-none select-none" : "cursor-grab snap-x snap-mandatory"
+        )}
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {properties.map((property, index) => (
           <div 
             key={`${groupTitle}-${property.id}-${index}`} 
-            // w-full on mobile (1 card), 50% minus gap on md (2 cards), 33.333% minus gaps on lg (3 cards)
             className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] shrink-0 snap-start"
           >
             <PropertyCard property={property} />
