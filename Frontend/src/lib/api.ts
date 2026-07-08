@@ -876,4 +876,15 @@ export async function deleteBlog(id: string): Promise<boolean> {
   return response.data?.success || false;
 }
 
+export type LeadInput = {
+  name: string;
+  email?: string;
+  phone?: string;
+  purpose?: "BUY" | "SELL";
+};
 
+export async function createLead(data: LeadInput): Promise<any> {
+  const response = await api.post("/leads", data);
+  if (!response.data?.success) throw new Error(response.data?.message || "Failed to create lead");
+  return response.data.data;
+}

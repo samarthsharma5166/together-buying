@@ -130,44 +130,17 @@ export default async function HomePage() {
         <StepTimeline steps={steps} />
       </Section>
 
-      <Section className="real-estate-story-bg text-white" eyebrow="Case Studies" title="Real estate success stories: transforming spaces">
+      <Section 
+        className="real-estate-story-bg text-white" 
+        title="What our customers Say" 
+        description="Real stories from our community members who unlocked developer-direct savings on their dream homes through GroupBuying."
+      >
         <ReviewStrip testimonials={testimonials} />
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {blogs.length > 0
-            ? blogs.slice(0, 3).map((blog) => (
-              <Link
-                key={blog.id}
-                href={`/blogs/${blog.slug}`}
-                className="rounded-[1.5rem] bg-white p-5 text-[#111111] transition hover:-translate-y-1 hover:shadow-xl"
-              >
-                <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#df432c]">Read More</p>
-                <h3 className="font-display text-lg font-black">{blog.title}</h3>
-                <p className="mt-4 flex items-center gap-2 text-xs font-bold text-slate-500">
-                  <CalendarDays size={15} />
-                  {new Date(blog.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                </p>
-              </Link>
-            ))
-            : articles.map((article) => (
-              <div key={article} className="rounded-[1.5rem] bg-white p-5 text-[#111111]">
-                <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-[#df432c]">Read More</p>
-                <h3 className="font-display text-lg font-black">{article}</h3>
-                <p className="mt-4 flex items-center gap-2 text-xs font-bold text-slate-500">
-                  <CalendarDays size={15} /> Updated case study
-                </p>
-              </div>
-            ))}
-        </div>
-        {blogs.length > 0 && (
-          <div className="mt-6 flex justify-center">
-            <ButtonLink href="/blogs" variant="secondary">View all blogs <ArrowRight size={18} /></ButtonLink>
-          </div>
-        )}
       </Section>
 
       <Section id="faqs" eyebrow="FAQs" title="You have questions. We have answers."><FAQAccordion items={faqs} /></Section>
 
-      <Section className="pb-18" eyebrow="Stay Informed, Save More" title="Plan your visit with a GroupBuying expert">
+      <Section className="pb-18" eyebrow="Stay Informed, Save More" title="Get in touch with a GroupBuying expert">
         <div className="visit-panel-bg grid items-center gap-6 rounded-[2rem] p-5 text-white shadow-[0_24px_70px_rgba(10,120,105,.18)] md:grid-cols-[1fr_380px] md:p-7">
           <div><BadgeCheck className="mb-4" size={34} /><h2 className="font-display text-3xl font-black leading-tight">Save big, stay secure, and get expert support.</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-orange-50">Tell us your preferred city, budget and project. Our RM will compare inventory and help you join the right buying group.</p><div className="mt-5 flex flex-wrap gap-2"><span className="rounded-full bg-white/15 px-3 py-2 text-xs font-bold"><ShieldCheck size={15} className="mr-1 inline" /> Verified support</span><span className="rounded-full bg-white/15 px-3 py-2 text-xs font-bold"><Building2 size={15} className="mr-1 inline" /> Developer-direct</span><span className="rounded-full bg-white/15 px-3 py-2 text-xs font-bold"><MapPin size={15} className="mr-1 inline" /> NCR specialists</span></div></div>
           <ContactForm compact />

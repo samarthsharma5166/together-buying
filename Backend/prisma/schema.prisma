@@ -12,7 +12,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 enum Role {
   USER
   BUYER_PREMIUM
@@ -80,95 +79,92 @@ enum LeadStatus {
 }
 
 model User {
-  id             String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  role           Role   @default(USER)  
+  role Role @default(USER)
 
-  firstName      String   @map("first_name")
-  lastName       String   @map("last_name")
+  firstName String @map("first_name")
+  lastName  String @map("last_name")
 
-  email          String   @unique
-  phone          String   @unique
+  email String @unique
+  phone String @unique
 
-  password       String  @map("password_hash")
-  avatarUrl      String?  @map("avatar_url")
+  password  String  @map("password_hash")
+  avatarUrl String? @map("avatar_url")
 
-  addressLine1   String?  @map("address_line_1")
-  addressLine2   String?  @map("address_line_2")
-  city           String?  @map("city")
-  state          String?  @map("state")
-  pincode        String?  @map("pincode")
+  addressLine1 String? @map("address_line_1")
+  addressLine2 String? @map("address_line_2")
+  city         String? @map("city")
+  state        String? @map("state")
+  pincode      String? @map("pincode")
 
-
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at") 
-  createdProperties Property[] @relation("CreatedProperties")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  createdProperties Property[]      @relation("CreatedProperties")
   assignedGroups    PropertyGroup[]
   groupMembership   GroupMembers?
   subscriptions     subscription[]
   transactions      transections[]
   blogs             Blog[]
-
   @@map("users")
 }
 
 model Property {
-  id                  String @id @default(uuid())
+  id String @id @default(uuid())
 
-  developerId         String
-  createdById         String
+  developerId String
+  createdById String
 
-  title               String
-  slug                String @unique
+  title String
+  slug  String @unique
 
-  description         String?
+  description String?
 
-  propertyType        PropertyType
-  status              PropertyStatus
+  propertyType PropertyType
+  status       PropertyStatus
 
-  city                String
-  locality            String
-  address             String
+  city     String
+  locality String
+  address  String
 
-  latitude            Decimal?
-  longitude           Decimal?
+  latitude  Decimal?
+  longitude Decimal?
 
-  reraNumber          String
-  reraState           String
+  reraNumber String
+  reraState  String
 
-  possessionDate      DateTime?
-  possessionStatus    PossessionStatus
+  possessionDate   DateTime?
+  possessionStatus PossessionStatus
 
-  minPrice            BigInt
-  maxPrice            BigInt
+  minPrice BigInt
+  maxPrice BigInt
 
-  totalUnits          Int?
+  totalUnits Int?
 
-  isFeatured          Boolean @default(false)
-  isPreLaunch         Boolean @default(false)
-  isFastSelling       Boolean @default(false) @map("is_fast_selling")
-  isPromising         Boolean @default(false) @map("is_promising")
+  isFeatured    Boolean @default(false)
+  isPreLaunch   Boolean @default(false)
+  isFastSelling Boolean @default(false) @map("is_fast_selling")
+  isPromising   Boolean @default(false) @map("is_promising")
 
-  views               Int     @default(0)
+  views Int @default(0)
 
-  metaTitle           String?
-  metaDescription     String?
+  metaTitle       String?
+  metaDescription String?
 
-  highlights          String?
-  amenities           String?
+  highlights String?
+  amenities  String?
 
-  specifications      String?
-  
+  specifications String?
 
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  developer           Developer @relation("DeveloperProperties", fields: [developerId], references: [id])
-  createdBy           User @relation("CreatedProperties", fields: [createdById], references: [id])
+  developer Developer @relation("DeveloperProperties", fields: [developerId], references: [id])
+  createdBy User      @relation("CreatedProperties", fields: [createdById], references: [id])
 
-  images              PropertyImage[]
-  units               PropertyUnit[]
-  groups              PropertyGroup[]
+  images PropertyImage[]
+  units  PropertyUnit[]
+  groups PropertyGroup[]
   // amenities           PropertyAmenity[]
   // documents           PropertyDocument[]
   // leads               PropertyLead[]
@@ -177,46 +173,44 @@ model Property {
   @@map("properties")
 }
 
-
 model PropertyImage {
-  id          String @id @default(uuid())
+  id String @id @default(uuid())
 
-  propertyId  String
+  propertyId String
 
-  imageUrl    String
+  imageUrl String
 
-  caption     String?
+  caption String?
 
-  imageType   PropertyImageType
+  imageType PropertyImageType
 
-  sortOrder   Int @default(0)
+  sortOrder Int @default(0)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  property Property @relation(fields: [propertyId],references: [id],onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   @@map("property_images")
 }
 
-
 model PropertyUnit {
-  id                String @id @default(uuid())
+  id String @id @default(uuid())
 
-  propertyId        String
+  propertyId String
 
-  unitType          UnitType
+  unitType UnitType
 
-  carpetAreaSqft    Decimal
+  carpetAreaSqft Decimal
 
-  superAreaSqft     Decimal?
+  superAreaSqft Decimal?
 
-  price             BigInt
+  price BigInt
 
-  availableUnits    Int?
+  availableUnits Int?
 
-  createdAt         DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  property Property @relation(fields: [propertyId],references: [id],onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   images UnitImage[]
 
@@ -224,23 +218,22 @@ model PropertyUnit {
 }
 
 model UnitImage {
-  id          String @id @default(uuid())
+  id String @id @default(uuid())
 
-  unitId      String
+  unitId String
 
-  imageUrl    String
+  imageUrl String
 
-  imageType   UnitImageType
+  imageType UnitImageType
 
-  caption     String?
+  caption String?
 
-  sortOrder   Int @default(0)
+  sortOrder Int @default(0)
 
-  unit PropertyUnit @relation(fields: [unitId],references: [id],onDelete: Cascade)
+  unit PropertyUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
 
   @@map("unit_images")
 }
-
 
 enum PartnershipStatus {
   ACTIVE
@@ -249,40 +242,39 @@ enum PartnershipStatus {
 }
 
 model Developer {
-  id                 String @id @default(uuid())
+  id String @id @default(uuid())
 
-  companyName        String @map("company_name")
-  slug               String @unique
+  companyName String @map("company_name")
+  slug        String @unique
 
-  logoUrl            String? @map("logo_url")
-  bannerImageUrl     String? @map("banner_image_url")
+  logoUrl        String? @map("logo_url")
+  bannerImageUrl String? @map("banner_image_url")
 
-  contactName        String @map("contact_name")
-  contactEmail       String @unique @map("contact_email")
-  contactPhone       String @unique @map("contact_phone")
+  contactName  String @map("contact_name")
+  contactEmail String @unique @map("contact_email")
+  contactPhone String @unique @map("contact_phone")
 
-  websiteUrl         String? @map("website_url")
+  websiteUrl String? @map("website_url")
 
-  establishedYear    Int? @map("established_year")
-  description        String?
+  establishedYear Int?    @map("established_year")
+  description     String?
 
-  headquartersCity   String? @map("headquarters_city")
+  headquartersCity String? @map("headquarters_city")
 
-  reraRegistered     Boolean @default(false) @map("rera_registered")
+  reraRegistered Boolean @default(false) @map("rera_registered")
 
-  partnershipStatus  PartnershipStatus @default(ACTIVE) @map("partnership_status")
+  partnershipStatus PartnershipStatus @default(ACTIVE) @map("partnership_status")
 
-  partnershipStart   DateTime? @map("partnership_start")
+  partnershipStart DateTime? @map("partnership_start")
 
-  createdAt          DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
-  properties         Property[] @relation("DeveloperProperties")
+  properties Property[] @relation("DeveloperProperties")
 
   @@map("developers")
 }
-
 
 enum PropertyGroupStatus {
   GROUP_FORMING
@@ -294,91 +286,88 @@ enum PropertyGroupStatus {
 }
 
 model PropertyGroup {
-  id                String @id @default(uuid())
+  id String @id @default(uuid())
 
-  propertyId        String
+  propertyId String
 
-  rm_id             String
+  rm_id String
 
-  name              String
+  name String
 
-  status            PropertyGroupStatus
+  status PropertyGroupStatus
 
-  min_group_size    Int
+  min_group_size Int
 
-  target_group_size    Int
+  target_group_size Int
 
-  target_discount   Float
+  target_discount Float
 
-  current_members   Int @default(0)
+  current_members Int @default(0)
 
-  createdAt         DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  updatedAt         DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 
-  property Property @relation(fields: [propertyId],references: [id],onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
-  rmUser     User     @relation(fields: [rm_id],references: [id],onDelete: Cascade)
+  rmUser User @relation(fields: [rm_id], references: [id], onDelete: Cascade)
 
-  members     GroupMembers[]
+  members GroupMembers[]
 
   @@map("property_groups")
 }
 
+model GroupMembers {
+  id String @id @default(uuid())
 
-model GroupMembers{
-  id            String   @id @default(uuid())
+  groupId String
 
-  groupId       String
+  userId String @unique
 
-  userId        String   @unique
+  createdAt DateTime @default(now())
 
-  createdAt     DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  updatedAt     DateTime @updatedAt
+  group PropertyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
-  group         PropertyGroup @relation(fields: [groupId],references: [id],onDelete: Cascade)
-
-  user     User     @relation(fields: [userId],references: [id],onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("group_members")
 }
 
-
-
-enum subscriptionStatus{
+enum subscriptionStatus {
   ACTIVE
   INACTIVE
 }
 
-enum subscriptionType{
+enum subscriptionType {
   MONTHLY
   QUARTERLY
   YEARLY
   LIFE_TIME
 }
 
-model subscriptionPlan{
-  id        String   @id @default(uuid())
+model subscriptionPlan {
+  id String @id @default(uuid())
 
   type subscriptionType
 
-  price    Float
+  price Float
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   subscriptions subscription[]
 
   @@map("subscription_plans")
 }
 
-model subscription{
-  id        String   @id @default(uuid())
+model subscription {
+  id String @id @default(uuid())
 
-  userId    String
-  amount    Float
+  userId String
+  amount Float
 
-  status    subscriptionStatus
+  status subscriptionStatus
 
   planId    String?
   expiresAt DateTime?
@@ -386,31 +375,31 @@ model subscription{
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user      User     @relation(fields: [userId],references: [id],onDelete: Cascade)
-  plan      subscriptionPlan? @relation(fields: [planId], references: [id])
+  user User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan subscriptionPlan? @relation(fields: [planId], references: [id])
 
   @@map("subscriptions")
 }
 
-enum transectionStatus{
+enum transectionStatus {
   PENDING
   SUCCESS
   FAILED
 }
 
-model transections{
-  id            String   @id @default(uuid())
+model transections {
+  id String @id @default(uuid())
 
-  userId        String
+  userId String
 
-  amount        Float
+  amount Float
 
-  status        transectionStatus
+  status transectionStatus
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user          User     @relation(fields: [userId],references: [id],onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("transections")
 }
@@ -431,15 +420,15 @@ model HeroSlide {
 }
 
 model ShowcaseVideo {
-  id         String   @id @default(uuid())
-  title      String
-  subtitle   String
-  videoUrl   String   @map("video_url")
-  posterUrl  String   @map("poster_url")
-  sortOrder  Int      @default(0) @map("sort_order")
-  isActive   Boolean  @default(true) @map("is_active")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(uuid())
+  title     String
+  subtitle  String
+  videoUrl  String   @map("video_url")
+  posterUrl String   @map("poster_url")
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("showcase_videos")
 }
@@ -460,4 +449,26 @@ model Blog {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@map("blogs")
+}
+
+enum leadStatus {
+  NEW
+  IN_PROGRESS
+  CLOSED
+}
+
+enum leadPurpose {
+  BUY
+  SELL
+}
+
+model leads {
+  id      String       @id @default(uuid())
+  name    String?
+  email   String?
+  phone   String?
+  purpose leadPurpose?
+  status  leadStatus   @default(NEW)
+
+  @@map("leads")
 }
