@@ -234,7 +234,7 @@ export async function getFeaturedProperties() {
   return result?.data?.length ? result.data : fallbackProperties.filter((item) => item.isFeatured).slice(0, 3);
 }
 
-export async function getHomeSectionProperties(flag: "isFastSelling" | "isPreLaunch" | "isFeatured" | "isPromising", limit = 3) {
+export async function getHomeSectionProperties(flag: "isFastSelling" | "isPreLaunch" | "isFeatured" | "isPromising", limit = 10) {
   const result = await getProperties({ [flag]: true, limit });
   return result.properties.slice(0, limit);
 }

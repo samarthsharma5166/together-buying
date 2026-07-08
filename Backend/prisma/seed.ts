@@ -69,9 +69,22 @@ async function main() {
   // Generate 30 Properties
   for (let i = 0; i < 30; i++) {
     const developerId = faker.helpers.arrayElement(developerIds);
-    const title = faker.location.street() + " " + faker.helpers.arrayElement(["Residences", "Estate", "Towers", "Heights", "Villas"]);
-    const propertyType = faker.helpers.arrayElement([PropertyType.RESIDENTIAL, PropertyType.COMMERCIAL]);
-    const isPreLaunch = faker.datatype.boolean();
+    
+    // Force specific categories for mock data
+    const isForcedVillaPlot = i < 8; // First 8 are Villas/Plots
+    const isForcedPreLaunch = i >= 8 && i < 16; // Next 8 are Pre-Launch
+    
+    const titleSuffix = isForcedVillaPlot 
+      ? faker.helpers.arrayElement(["Villas", "Plots", "Estates"])
+      : faker.helpers.arrayElement(["Residences", "Towers", "Heights", "Apartments"]);
+      
+    const title = faker.location.street() + " " + titleSuffix;
+    const propertyType = isForcedVillaPlot ? PropertyType.RESIDENTIAL : faker.helpers.arrayElement([PropertyType.RESIDENTIAL, PropertyType.COMMERCIAL]);
+    const isPreLaunch = isForcedPreLaunch ? true : faker.datatype.boolean();
+    const isPromising = isForcedVillaPlot ? true : faker.datatype.boolean();
+    const possessionStatus = isForcedPreLaunch 
+      ? PossessionStatus.PRE_LAUNCH 
+      : faker.helpers.arrayElement([PossessionStatus.PRE_LAUNCH, PossessionStatus.UNDER_CONSTRUCTION, PossessionStatus.READY_TO_MOVE]);
     
     // Choose random images
     const imageSetKeys = Object.keys(imageSets) as (keyof typeof imageSets)[];
@@ -87,7 +100,7 @@ async function main() {
         description: faker.lorem.sentence(),
         propertyType,
         status: PropertyStatus.ACTIVE,
-        possessionStatus: faker.helpers.arrayElement([PossessionStatus.PRE_LAUNCH, PossessionStatus.UNDER_CONSTRUCTION, PossessionStatus.READY_TO_MOVE]),
+        possessionStatus,
         city: faker.location.city(),
         locality: faker.location.street(),
         address: faker.location.streetAddress(),
@@ -96,7 +109,7 @@ async function main() {
         isFeatured: faker.datatype.boolean(),
         isPreLaunch,
         isFastSelling: faker.datatype.boolean(),
-        isPromising: faker.datatype.boolean(),
+        isPromising,
         developerId,
         createdById: admin.id,
         reraNumber: `RERA-${faker.string.alphanumeric(8).toUpperCase()}`,
@@ -113,7 +126,9 @@ async function main() {
           create: Array.from({ length: faker.number.int({ min: 2, max: 5 }) }).map((_, index) => {
             const area = faker.number.int({ min: 800, max: 4000 });
             return {
-              unitType: faker.helpers.arrayElement([UnitType.BHK_2, UnitType.BHK_3, UnitType.BHK_4, UnitType.VILLA]),
+                unitType: isForcedVillaPlot 
+                  ? (title.includes("Plots") ? UnitType.PLOT : UnitType.VILLA) 
+                  : faker.helpers.arrayElement([UnitType.BHK_2, UnitType.BHK_3, UnitType.BHK_4]),
               superAreaSqft: area,
               carpetAreaSqft: Math.round(area * 0.72),
               price: BigInt(minPrice + faker.number.int({ min: 0, max: maxPrice - minPrice })),
