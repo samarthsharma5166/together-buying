@@ -881,10 +881,62 @@ export type LeadInput = {
   email?: string;
   phone?: string;
   purpose?: "BUY" | "SELL";
+  project?: string;
+  city?: string;
 };
 
 export async function createLead(data: LeadInput): Promise<any> {
   const response = await api.post("/leads", data);
   if (!response.data?.success) throw new Error(response.data?.message || "Failed to create lead");
   return response.data.data;
+}
+
+export type LeadStatus = "NEW" | "CONTACTED" | "FOLLOW_UP" | "SITE_VISIT" | "NEGOTIATION" | "BOOKED" | "LOST" | "CLOSED";
+export type LeadPriority = "HIGH" | "MEDIUM" | "LOW";
+
+export type LeadNote = {
+  id: string;
+  text: string;
+  createdAt: string;
+  author: {
+    firstName: string;
+    lastName: string;
+  };
+};
+
+export type Lead = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  purpose: "BUY" | "SELL" | null;
+  status: LeadStatus;
+  priority: LeadPriority;
+  project: string | null;
+  city: string | null;
+  source: string | null;
+  followUpDate: string | null;
+  createdAt: string;
+  _count?: { notes: number };
+  notes?: LeadNote[];
+};
+
+export async function getMyLeads(params: any): Promise<{ leads: Lead[], pagination: any }> {
+  const { data } = await api.get("/leads", { params });
+  return data.data;
+}
+
+export async function getLeadDetails(id: string): Promise<Lead> {
+  const { data } = await api.get(`/leads/${id}`);
+  return data.data;
+}
+
+export async function updateLead(id: string, payload: Partial<Lead>): Promise<Lead> {
+  const { data } = await api.patch(`/leads/${id}`, payload);
+  return data.data;
+}
+
+export async function addLeadNote(id: string, text: string): Promise<LeadNote> {
+  const { data } = await api.post(`/leads/${id}/notes`, { text });
+  return data.data;
 }

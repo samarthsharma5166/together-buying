@@ -29,7 +29,7 @@ export function initials(name?: string | null) {
 
 export function calculateDiscount(minPrice:number, maxPrice:number) {
   if (maxPrice <= 0 || minPrice < 0 || minPrice > maxPrice) {
-    return 0;
+    return { discountPercent: 0, formatedDiscountAmount: "₹0" };
   }
 
   const discountAmount = maxPrice-minPrice;

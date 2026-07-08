@@ -490,7 +490,7 @@ model leads {
   source       String?
   followUpDate DateTime?     @map("follow_up_date")
   createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at")
   notes        LeadNote[]
 
   @@map("leads")

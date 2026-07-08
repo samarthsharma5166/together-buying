@@ -2,7 +2,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 import { Reveal } from "@/components/reveal";
 import { cn } from "@/lib/utils";
 
-type SectionProps = HTMLAttributes<HTMLElement> & {
+type SectionProps = Omit<HTMLAttributes<HTMLElement>, "title"> & {
   eyebrow?: ReactNode;
   title?: ReactNode;
   description?: ReactNode;

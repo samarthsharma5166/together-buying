@@ -15,6 +15,8 @@ export function ContactForm({ compact = false }: { compact?: boolean }) {
     phone: "",
     email: "",
     purpose: "BUY",
+    project: "",
+    city: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -28,7 +30,7 @@ export function ContactForm({ compact = false }: { compact?: boolean }) {
     try {
       await createLead(formData);
       setSent(true);
-      setFormData({ name: "", phone: "", email: "", purpose: "BUY" });
+      setFormData({ name: "", phone: "", email: "", purpose: "BUY", project: "", city: "" });
     } catch (err: any) {
       setError(err.message || "Something went wrong.");
     } finally {
@@ -42,6 +44,8 @@ export function ContactForm({ compact = false }: { compact?: boolean }) {
       <input required name="name" value={formData.name} onChange={handleChange} placeholder="Full name" className="professional-focus rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#111111] placeholder:text-slate-500 transition" />
       <input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email address" className="professional-focus rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#111111] placeholder:text-slate-500 transition" />
       <input required name="phone" value={formData.phone} onChange={handleChange} placeholder="Mobile number for callback" className="professional-focus rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#111111] placeholder:text-slate-500 transition" />
+      <input name="city" value={formData.city} onChange={handleChange} placeholder="City you're looking in (e.g. Mumbai)" className="professional-focus rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#111111] placeholder:text-slate-500 transition" />
+      <input name="project" value={formData.project} onChange={handleChange} placeholder="Specific project (if any)" className="professional-focus rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-[#111111] placeholder:text-slate-500 transition" />
       <div className="relative">
         <select name="purpose" value={formData.purpose} onChange={handleChange} className="appearance-none professional-focus w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 pr-10 text-sm font-semibold text-[#111111] transition">
           <option value="BUY">Looking to Buy</option>
