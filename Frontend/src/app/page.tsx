@@ -36,12 +36,12 @@ export default async function HomePage() {
 
   return (
     <main>
-      <section className="bg-white relative overflow-hidden pb-10 pt-8 sm:pb-14 sm:pt-10 md:pb-16 md:pt-12 lg:pb-20 lg:pt-14">
-        <div className="pointer-events-none absolute -left-20 top-20 hidden h-72 w-72 rounded-full bg-[#e34b32]/20 blur-3xl sm:block" />
-        <div className="pointer-events-none absolute right-0 top-0 hidden h-96 w-96 rounded-full bg-[#111111]/10 blur-3xl md:block" />
-        <div className="glow-blob green left-1/3 top-24 hidden sm:block" />
-        <div className="glow-blob blue right-20 top-56 hidden lg:block" />
-        <div className="glow-blob gold bottom-24 left-16 hidden md:block" />
+      <section className="bg-gradient-to-b from-orange-50/80 via-amber-50/40 to-transparent relative overflow-hidden pb-10 pt-8 sm:pb-14 sm:pt-10 md:pb-16 md:pt-12 lg:pb-20 lg:pt-14">
+        <div className="pointer-events-none absolute -left-20 top-0 hidden h-[500px] w-[500px] rounded-full bg-orange-400/20 blur-[120px] animate-[pulse_4s_ease-in-out_infinite] sm:block" />
+        <div className="pointer-events-none absolute right-0 top-0 hidden h-[600px] w-[600px] rounded-full bg-amber-400/20 blur-[140px] animate-[pulse_6s_ease-in-out_infinite] md:block" />
+        <div className="pointer-events-none absolute left-1/3 top-24 hidden h-80 w-80 rounded-full bg-emerald-400/20 blur-[100px] sm:block animate-[pulse_5s_ease-in-out_infinite]" />
+        <div className="pointer-events-none absolute right-20 top-56 hidden h-96 w-96 rounded-full bg-[#e34b32]/15 blur-[120px] lg:block animate-[pulse_7s_ease-in-out_infinite_reverse]" />
+        <div className="pointer-events-none absolute bottom-24 left-16 hidden h-80 w-80 rounded-full bg-yellow-400/20 blur-[100px] md:block animate-[pulse_6s_ease-in-out_infinite]" />
         <div
           className={`container-shell grid min-w-0 grid-cols-1 items-center gap-6 sm:gap-8${heroSlides.length > 0 ? " lg:grid-cols-[1.15fr_0.85fr] xl:grid-cols-[1.2fr_0.8fr]" : ""
             }`}
@@ -65,7 +65,7 @@ export default async function HomePage() {
               Join 3-7 intrested buyers and negotiate directly with developers
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-start">
-              <ButtonLink href="/properties" className="w-full !px-6 !py-3.5 !text-base sm:w-auto">
+              <ButtonLink href="/properties" className="w-full !px-6 !py-3.5 !text-base text-white! sm:w-auto">
                 Explore Properties <ArrowRight size={20} />
               </ButtonLink>
               <ButtonLink href="/how-it-works" variant="secondary" className="w-full !px-6 !py-3.5 !text-base sm:w-auto">

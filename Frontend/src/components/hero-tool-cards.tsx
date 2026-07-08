@@ -87,7 +87,7 @@ function ToolCard({ card, delay }: { card: ToolCardData; delay: number }) {
       style={{ rotateX, rotateY, transformPerspective: 1100 }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className={`hero-tool-card magnetic-card group relative flex flex-col overflow-hidden rounded-[1.35rem] border bg-gradient-to-br ${gradient} p-4 shadow-[0_12px_36px_rgba(17,17,17,.06)] backdrop-blur-xl ${ring}`}
+      className={`hero-tool-card hover-lift group relative flex flex-col overflow-hidden rounded-[1.35rem] bg-white/80 border border-white p-4 shadow-[0_15px_35px_-5px_rgba(227,75,50,0.06),0_0_0_1px_rgba(255,255,255,0.7)_inset] backdrop-blur-xl transition-all ${ring}`}
     >
       <div className={`pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full ${orb} blur-2xl transition duration-500 group-hover:scale-110`} />
       <div className="hero-tool-grid pointer-events-none absolute inset-0 opacity-[0.28]" />
@@ -130,8 +130,8 @@ export function HeroToolCards() {
   return (
     <section className="relative -mt-8 z-30 pb-4">
       <div className="container-shell relative">
-        <div className="animated-border rounded-[1.6rem] p-1">
-          <div className="relative overflow-hidden rounded-[1.45rem] bg-white/60 p-2 backdrop-blur-md md:p-2.5">
+        <div className="premium-border rounded-[1.6rem] p-1 bg-white/40 backdrop-blur-xl">
+          <div className="relative overflow-hidden rounded-[1.45rem] bg-white/70 p-2 backdrop-blur-2xl md:p-2.5">
             <div className="relative grid gap-2.5 md:grid-cols-3">
               {cards.map((card, index) => (
                 <ToolCard key={card.title} card={card} delay={index * 0.08} />
