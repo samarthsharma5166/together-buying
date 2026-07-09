@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getMyGroups } from "../controllers/rm.controllers.js";
+import { getMyGroups, getGroupsSummary, updateGroupStatus } from "../controllers/rm.controllers.js";
 import { isAuthenticated, authorizedRoles } from "../middlewares/auth.middleware.js";
 
 const rmRouter = Router();
@@ -8,6 +8,8 @@ const rmRouter = Router();
 rmRouter.use(isAuthenticated);
 rmRouter.use(authorizedRoles("RM", "ADMIN", "SUPER_ADMIN"));
 
+rmRouter.get("/groups/summary", getGroupsSummary);
 rmRouter.get("/groups", getMyGroups);
+rmRouter.patch("/groups/:id/status", updateGroupStatus);
 
 export default rmRouter;

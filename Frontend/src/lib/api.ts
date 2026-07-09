@@ -619,8 +619,28 @@ export async function getRmGroups(params?: {
   status?: string;
   page?: number;
   limit?: number;
+  sortBy?: string;
+  order?: "asc" | "desc";
 }): Promise<ApiList<PropertyGroup>> {
   const response = await api.get("/rm/groups", { params });
+  return response.data;
+}
+
+export type RmGroupsSummary = {
+  totalGroups: number;
+  activeGroups: number;
+  formingGroups: number;
+  developerAgreedGroups: number;
+  totalCustomers: number;
+};
+
+export async function getRmGroupsSummary(): Promise<{ data: RmGroupsSummary }> {
+  const response = await api.get("/rm/groups/summary");
+  return response.data;
+}
+
+export async function updateRmGroupStatus(groupId: string, status: string): Promise<{ data: PropertyGroup }> {
+  const response = await api.patch(`/rm/groups/${groupId}/status`, { status });
   return response.data;
 }
 

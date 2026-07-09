@@ -8,8 +8,10 @@ import {
   adminListUnassignedProperties,
   adminListAssignedProperties,
   getRmGroups,
+  getRmGroupsSummary,
   getUserGroups,
   type PropertyGroup,
+  type RmGroupsSummary,
   type Property
 } from "@/lib/api";
 
@@ -31,6 +33,7 @@ interface GroupState {
     limit?: number;
     totalPages?: number;
   } | null;
+  rmSummary: RmGroupsSummary | null;
   userGroups: PropertyGroup[];
   userLoading: boolean;
   userError: string | null;
@@ -49,6 +52,7 @@ const initialState: GroupState = {
   rmLoading: false,
   rmError: null,
   rmMeta: null,
+  rmSummary: null,
   userGroups: [],
   userLoading: false,
   userError: null,
@@ -141,7 +145,7 @@ export const fetchAssignedPropertiesAdmin = createAsyncThunk(
 export const fetchRmGroups = createAsyncThunk(
   "group/fetchRmGroups",
   async (
-    params: { search?: string; status?: string; page?: number; limit?: number } | undefined,
+    params: { search?: string; status?: string; page?: number; limit?: number; sortBy?: string; order?: "asc" | "desc" } | undefined,
     { rejectWithValue }
   ) => {
     try {
@@ -149,6 +153,18 @@ export const fetchRmGroups = createAsyncThunk(
       return response;
     } catch (err: any) {
       return rejectWithValue(err.message || "Failed to fetch RM groups");
+    }
+  }
+);
+
+export const fetchRmGroupsSummary = createAsyncThunk(
+  "group/fetchRmGroupsSummary",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getRmGroupsSummary();
+      return response.data;
+    } catch (err: any) {
+      return rejectWithValue(err.message || "Failed to fetch RM group summary");
     }
   }
 );
@@ -294,6 +310,11 @@ const groupSlice = createSlice({
     builder.addCase(fetchRmGroups.rejected, (state, action) => {
       state.rmLoading = false;
       state.rmError = action.payload as string;
+    });
+
+    // Fetch RM Groups Summary
+    builder.addCase(fetchRmGroupsSummary.fulfilled, (state, action) => {
+      state.rmSummary = action.payload || null;
     });
 
     // Fetch User Groups
