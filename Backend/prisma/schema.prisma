@@ -1,0 +1,521 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  BUYER_PREMIUM
+  RM
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum PropertyType {
+  RESIDENTIAL
+  COMMERCIAL
+}
+
+enum PropertyStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  SOLD_OUT
+  ARCHIVED
+}
+
+enum PossessionStatus {
+  PRE_LAUNCH
+  UNDER_CONSTRUCTION
+  READY_TO_MOVE
+}
+
+enum PropertyImageType {
+  EXTERIOR
+  AMENITY
+  LOCATION_MAP
+  CONSTRUCTION_UPDATE
+  MASTER_PLAN
+}
+
+enum UnitType {
+  BHK_1
+  BHK_2
+  BHK_3
+  BHK_4
+  BHK_5
+  VILLA
+  PLOT
+  OFFICE
+  SHOP
+}
+
+enum UnitImageType {
+  FLOOR_PLAN
+  INTERIOR
+  BALCONY
+  KITCHEN
+  BEDROOM
+  LIVING_ROOM
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  SITE_VISIT
+  NEGOTIATION
+  BOOKED
+  LOST
+}
+
+model User {
+  id String @id @default(uuid())
+
+  role Role @default(USER)
+
+  firstName String @map("first_name")
+  lastName  String @map("last_name")
+
+  email String @unique
+  phone String @unique
+
+  password  String  @map("password_hash")
+  avatarUrl String? @map("avatar_url")
+
+  addressLine1 String? @map("address_line_1")
+  addressLine2 String? @map("address_line_2")
+  city         String? @map("city")
+  state        String? @map("state")
+  pincode      String? @map("pincode")
+
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+  createdProperties Property[]      @relation("CreatedProperties")
+  assignedGroups    PropertyGroup[]
+  groupMembership   GroupMembers?
+  subscriptions     subscription[]
+  transactions      transections[]
+  blogs             Blog[]
+  leads             leads[]
+  leadNotes         LeadNote[]
+  @@map("users")
+}
+
+model Property {
+  id String @id @default(uuid())
+
+  developerId String
+  createdById String
+
+  title String
+  slug  String @unique
+
+  description String?
+
+  propertyType PropertyType
+  status       PropertyStatus
+
+  city     String
+  locality String
+  address  String
+
+  latitude  Decimal?
+  longitude Decimal?
+
+  reraNumber String
+  reraState  String
+
+  possessionDate   DateTime?
+  possessionStatus PossessionStatus
+
+  minPrice BigInt
+  maxPrice BigInt
+
+  totalUnits Int?
+
+  isFeatured    Boolean @default(false)
+  isPreLaunch   Boolean @default(false)
+  isFastSelling Boolean @default(false) @map("is_fast_selling")
+  isPromising   Boolean @default(false) @map("is_promising")
+  isOffshore    Boolean @default(false) @map("is_offshore")
+
+  views Int @default(0)
+
+  metaTitle       String?
+  metaDescription String?
+
+  highlights String?
+  amenities  String?
+
+  specifications String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  developer Developer @relation("DeveloperProperties", fields: [developerId], references: [id])
+  createdBy User      @relation("CreatedProperties", fields: [createdById], references: [id])
+
+  images PropertyImage[]
+  units  PropertyUnit[]
+  groups PropertyGroup[]
+  // amenities           PropertyAmenity[]
+  // documents           PropertyDocument[]
+  // leads               PropertyLead[]
+  // groupBuy            PropertyGroupBuy?
+
+  @@map("properties")
+}
+
+model PropertyImage {
+  id String @id @default(uuid())
+
+  propertyId String
+
+  imageUrl String
+
+  caption String?
+
+  imageType PropertyImageType
+
+  sortOrder Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@map("property_images")
+}
+
+model PropertyUnit {
+  id String @id @default(uuid())
+
+  propertyId String
+
+  unitType UnitType
+
+  carpetAreaSqft Decimal
+
+  superAreaSqft Decimal?
+
+  price BigInt
+
+  availableUnits Int?
+
+  createdAt DateTime @default(now())
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  images UnitImage[]
+
+  @@map("property_units")
+}
+
+model UnitImage {
+  id String @id @default(uuid())
+
+  unitId String
+
+  imageUrl String
+
+  imageType UnitImageType
+
+  caption String?
+
+  sortOrder Int @default(0)
+
+  unit PropertyUnit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@map("unit_images")
+}
+
+enum PartnershipStatus {
+  ACTIVE
+  PAUSED
+  TERMINATED
+}
+
+model Developer {
+  id String @id @default(uuid())
+
+  companyName String @map("company_name")
+  slug        String @unique
+
+  logoUrl        String? @map("logo_url")
+  bannerImageUrl String? @map("banner_image_url")
+
+  contactName  String @map("contact_name")
+  contactEmail String @unique @map("contact_email")
+  contactPhone String @unique @map("contact_phone")
+
+  websiteUrl String? @map("website_url")
+
+  establishedYear Int?    @map("established_year")
+  description     String?
+
+  headquartersCity String? @map("headquarters_city")
+
+  reraRegistered Boolean @default(false) @map("rera_registered")
+
+  partnershipStatus PartnershipStatus @default(ACTIVE) @map("partnership_status")
+
+  partnershipStart DateTime? @map("partnership_start")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  properties Property[] @relation("DeveloperProperties")
+
+  @@map("developers")
+}
+
+enum PropertyGroupStatus {
+  GROUP_FORMING
+  GROUP_ACTIVE
+  NEGOTIATING_WITH_DEVELOPER
+  DEVELOPER_AGREED
+  SOLD_OUT
+  CANCELLED
+}
+
+model PropertyGroup {
+  id String @id @default(uuid())
+
+  propertyId String
+
+  rm_id String
+
+  name String
+
+  status PropertyGroupStatus
+
+  min_group_size Int
+
+  target_group_size Int
+
+  target_discount Float
+
+  current_members Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  rmUser User @relation(fields: [rm_id], references: [id], onDelete: Cascade)
+
+  members GroupMembers[]
+
+  @@map("property_groups")
+}
+
+model GroupMembers {
+  id String @id @default(uuid())
+
+  groupId String
+
+  userId String @unique
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  group PropertyGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("group_members")
+}
+
+enum subscriptionStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum subscriptionType {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  LIFE_TIME
+}
+
+model subscriptionPlan {
+  id String @id @default(uuid())
+
+  type subscriptionType
+
+  price Float
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  subscriptions subscription[]
+
+  @@map("subscription_plans")
+}
+
+model subscription {
+  id String @id @default(uuid())
+
+  userId String
+  amount Float
+
+  status subscriptionStatus
+
+  planId    String?
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan subscriptionPlan? @relation(fields: [planId], references: [id])
+
+  @@map("subscriptions")
+}
+
+enum transectionStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model transections {
+  id String @id @default(uuid())
+
+  userId String
+
+  amount Float
+
+  status transectionStatus
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("transections")
+}
+
+model HeroSlide {
+  id         String   @id @default(uuid())
+  imageUrl   String   @map("image_url")
+  caption    String?
+  tagLabel   String   @default("We've saved") @map("tag_label")
+  tagAmount  String   @default("₹25Cr+") @map("tag_amount")
+  tagSubtext String   @default("for 150+ families") @map("tag_subtext")
+  sortOrder  Int      @default(0) @map("sort_order")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("hero_slides")
+}
+
+model ShowcaseVideo {
+  id        String   @id @default(uuid())
+  title     String
+  subtitle  String
+  videoUrl  String   @map("video_url")
+  posterUrl String?  @map("poster_url")
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("showcase_videos")
+}
+
+model YoutubeChannelConfig {
+  id           String   @id @default("default")
+  channelName  String   @map("channel_name")
+  channelUrl   String   @map("channel_url")
+  metadataText String?  @map("metadata_text")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("youtube_channel_config")
+}
+
+model Blog {
+  id            String   @id @default(uuid())
+  title         String
+  slug          String   @unique
+  excerpt       String?  @db.Text
+  content       String   @db.LongText
+  coverImageUrl String?  @map("cover_image_url")
+  category      String   @default("General")
+  readTimeMin   Int      @default(5) @map("read_time_min")
+  isPublished   Boolean  @default(false) @map("is_published")
+  authorId      String   @map("author_id")
+  author        User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("blogs")
+}
+
+enum leadStatus {
+  NEW
+  CONTACTED
+  FOLLOW_UP
+  SITE_VISIT
+  NEGOTIATION
+  BOOKED
+  LOST
+  CLOSED
+}
+
+enum leadPurpose {
+  BUY
+  SELL
+}
+
+enum leadPriority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+model leads {
+  id           String        @id @default(uuid())
+  name         String?
+  email        String?
+  phone        String?
+  rmId         String?
+  rm           User?         @relation(fields: [rmId], references: [id], onDelete: Cascade)
+  purpose      leadPurpose?
+  status       leadStatus    @default(NEW)
+  priority     leadPriority  @default(MEDIUM)
+  project      String?
+  city         String?
+  source       String?
+  followUpDate DateTime?     @map("follow_up_date")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @default(now()) @updatedAt @map("updated_at")
+  notes        LeadNote[]
+
+  @@map("leads")
+}
+
+model LeadNote {
+  id        String   @id @default(uuid())
+  text      String   @db.Text
+  leadId    String   @map("lead_id")
+  lead      leads    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  authorId  String   @map("author_id")
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("lead_notes")
+}

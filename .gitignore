@@ -1,0 +1,35 @@
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE Files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Backend Ignored Files
+Backend/node_modules/
+Backend/dist/
+Backend/.env
+Backend/*.db
+Backend/*.db-journal
+Backend/*.log
+Backend/tsconfig.tsbuildinfo
+Backend/src/generated/prisma/
+
+# Frontend Ignored Files
+Frontend/node_modules/
+Frontend/.next/
+Frontend/out/
+Frontend/build/
+Frontend/.env.local
+Frontend/.env.development.local
+Frontend/.env.test.local
+Frontend/.env.production.local
+Frontend/.eslintcache
+Frontend/.stylelintcache
+Frontend/*.tsbuildinfo

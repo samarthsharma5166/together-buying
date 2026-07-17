@@ -1,0 +1,53 @@
+import { Router } from "express";
+import {
+  createProperty,
+  getProperty,
+  updateProperty,
+  listProperties,
+  deleteProperty,
+  uploadPropertyImages,
+  deletePropertyImage,
+  getFeaturedProperties,
+  toggleFeatured,
+  updatePossessionStatus,
+  createPropertyUnit,
+  updatePropertyUnit,
+  deletePropertyUnit,
+  uploadPropertyUnitImage,
+  deletePropertyUnitImage,
+} from "../controllers/property.controllers.js";
+import { isAuthenticated, authorizedRoles } from "../middlewares/auth.middleware.js";
+import { uploadPropertyImages as uploadPropertyImagesMiddleware } from "../middlewares/upload.middleware.js";
+
+const router = Router();
+
+// Public routes
+router.get("/featured", getFeaturedProperties);
+router.get("/", listProperties);
+
+// Public details route (gated client-side for subscription/role)
+router.get("/:idOrSlug",isAuthenticated,authorizedRoles("BUYER_PREMIUM","RM","ADMIN","SUPER_ADMIN"),getProperty);
+
+// Admin-only routes
+router.post("/", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), createProperty);
+router.patch("/:id", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), updateProperty);
+router.delete("/archived/:id", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), deleteProperty);
+
+// Dedicated Property Image management routes
+router.post("/:propertyId/images", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), uploadPropertyImagesMiddleware, uploadPropertyImages);
+router.delete("/images/:imageId", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), deletePropertyImage);
+
+// Status updates
+router.patch("/:id/featured", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), toggleFeatured);
+router.patch("/:id/possession-status", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), updatePossessionStatus);
+
+// Property Unit management routes
+router.post("/:propertyId/units", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), createPropertyUnit);
+router.patch("/units/:unitId", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), updatePropertyUnit);
+router.delete("/units/:unitId", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), deletePropertyUnit);
+
+// Property Unit Image management routes
+router.post("/units/:unitId/images", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), uploadPropertyImagesMiddleware, uploadPropertyUnitImage);
+router.delete("/units/images/:imageId", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), deletePropertyUnitImage);
+
+export default router;
