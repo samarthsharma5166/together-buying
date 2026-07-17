@@ -63,6 +63,7 @@ export const propertyBaseObject = z.object({
   isPreLaunch: z.coerce.boolean().optional().default(false),
   isFastSelling: z.coerce.boolean().optional().default(false),
   isPromising: z.coerce.boolean().optional().default(false),
+  isOffshore: z.coerce.boolean().optional().default(false),
   metaTitle: z.string().optional().nullable(),
   metaDescription: z.string().optional().nullable(),
   highlights: z.array(z.string()).optional().default([]),

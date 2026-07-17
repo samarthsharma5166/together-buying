@@ -404,6 +404,7 @@ export const listProperties = tryCatch(async (req: AuthenticatedRequest, res: Re
   const isPreLaunch = typeof req.query.isPreLaunch === "string" ? req.query.isPreLaunch : undefined;
   const isFastSelling = typeof req.query.isFastSelling === "string" ? req.query.isFastSelling : undefined;
   const isPromising = typeof req.query.isPromising === "string" ? req.query.isPromising : undefined;
+  const isOffshore = typeof req.query.isOffshore === "string" ? req.query.isOffshore : undefined;
   const search = typeof req.query.search === "string" ? req.query.search : undefined;
 
   // Build filter object
@@ -426,6 +427,7 @@ export const listProperties = tryCatch(async (req: AuthenticatedRequest, res: Re
   if (isPreLaunch) where.isPreLaunch = isPreLaunch === "true";
   if (isFastSelling) where.isFastSelling = isFastSelling === "true";
   if (isPromising) where.isPromising = isPromising === "true";
+  if (isOffshore) where.isOffshore = isOffshore === "true";
 
   // Price range filters (handling BigInt translation)
   if (minPrice || maxPrice) {

@@ -5,8 +5,9 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Heart, MapPin, Phone, Repeat2, Share2, ShieldCheck, Users } from "lucide-react";
 import type { Property } from "@/lib/api";
-import { getPropertyCarouselImages } from "@/lib/api";
-import { calculateDiscount, initials, rangePrice } from "@/lib/utils";
+import { getAssetUrl, getPropertyCarouselImages } from "@/lib/api";
+import { calculateDiscount, rangePrice } from "@/lib/utils";
+import { DeveloperLogo } from "@/components/developer-logo";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { openSubscriptionModal } from "@/store/slices/subscriptionSlice";
 import { cn } from "@/lib/utils";
@@ -118,7 +119,7 @@ export function PropertyCard({ property, compact = false }: { property: Property
   };
 
   return (
-    <Link href={href} onClick={handleClick} className="group magnetic-card hover-lift block overflow-hidden rounded-[1.65rem] bg-white p-3 premium-border">
+    <Link href={href} onClick={handleClick} className="group property-card block overflow-hidden rounded-[1.65rem] bg-white p-3">
       <div className="relative h-72 overflow-hidden rounded-[1.1rem] bg-gradient-to-br from-slate-700 via-slate-800 to-[#111111]">
         {carouselImages.length > 0 ? (
           <PropertyImageCarousel images={carouselImages} />
@@ -126,15 +127,24 @@ export function PropertyCard({ property, compact = false }: { property: Property
           <div className="absolute inset-0 hero-grid opacity-50" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
-        <CardTag dealLabel={property.possessionStatus as "PRE_LAUNCH" | "UNDER_CONSTRUCTION" | "READY_TO_MOVE"}/>
+        <CardTag property={property} />
         <div className="absolute right-3 top-3 z-10 grid gap-2">
           <span className="property-action"><Heart size={17} /></span>
           <span className="property-action"><Repeat2 size={16} /></span>
           <span className="property-action"><Share2 size={16} /></span>
         </div>
         <div className="absolute bottom-3 left-3 z-10 flex items-center gap-2 text-white">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-sm font-bold backdrop-blur">{initials(property.developer?.companyName)}</span>
-          <span className="text-sm font-semibold tracking-tight">{property.developer?.companyName || "GroupBuying Partner"}</span>
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/90 p-0.5 shadow-md backdrop-blur">
+            <DeveloperLogo
+              src={getAssetUrl(property.developer?.logoUrl)}
+              alt={property.developer?.companyName || "Developer"}
+              className="h-7 w-7 object-contain"
+              boxClassName="h-full w-full rounded-full text-[10px]"
+              width={28}
+              height={28}
+            />
+          </span>
+          <span className="text-sm font-semibold tracking-tight drop-shadow-sm">{property.developer?.companyName || "GroupBuying Partner"}</span>
         </div>
       </div>
 
@@ -178,9 +188,10 @@ export function PropertyCard({ property, compact = false }: { property: Property
           <span className="rounded-xl bg-[#e34b32] px-5 py-3.5 text-sm font-bold text-white shadow-lg transition hover:scale-105 group-hover:bg-[#111111]">Join Group</span>
         </div>
 
-        <div className="mt-4 pt-3 flex items-center justify-between text-[11px] font-semibold text-[#e34b32] border-t border-red-100/50">
-          <span>Get upto {discountPercent}% discount on this property</span>
-          <span>{property.views || 0} buyers viewed this project</span>
+        <div className="mt-4 flex items-center gap-2 border-t border-red-100/50 pt-3 text-[11px] font-semibold text-[#e34b32]">
+          <span className="min-w-0 flex-1 leading-snug">Get upto {discountPercent}% discount on this property</span>
+          <span className="h-3 w-px shrink-0 bg-[#e34b32]/35" aria-hidden />
+          <span className="shrink-0 text-right leading-snug">{property.views || 0} buyers viewed this project</span>
         </div>
       </div>
     </Link>

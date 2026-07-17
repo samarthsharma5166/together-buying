@@ -1,5 +1,11 @@
 import { api } from "@/lib/axios";
 import { citiesMatch } from "@/lib/locations";
+import {
+  fallbackDevelopers as mockDevelopers,
+  fallbackHeroSlides as mockHeroSlides,
+  fallbackShowcaseVideos as mockShowcaseVideos,
+  fallbackYoutubeChannel as mockYoutubeChannel,
+} from "@/lib/mock-data";
 
 export type Developer = {
   id: string;
@@ -76,6 +82,7 @@ export type Property = {
   isPreLaunch?: boolean;
   isFastSelling?: boolean;
   isPromising?: boolean;
+  isOffshore?: boolean;
   developer?: Partial<Developer> | null;
   images?: PropertyImage[];
   units?: PropertyUnit[];
@@ -139,14 +146,10 @@ export const fallbackProperties: Property[] = [
   { id: "trehan-iris-broadway", title: "Trehan Iris Broadway", slug: "trehan-iris-broadway", description: "Fast-selling mixed-use destination.", propertyType: "Commercial", possessionStatus: "Ready To Move", city: "Noida", locality: "Sector 85", minPrice: "18000000", maxPrice: "35000000", isFastSelling: true, developer: { companyName: "Trehan Iris" }, images: FALLBACK_IMAGE_SET.map((url, i) => ({ imageUrl: url, sortOrder: i })), units: [{ unitType: "Retail", superAreaSqft: 850, price: "18000000" }] },
   { id: "signature-titanium-spr", title: "Signature Titanium SPR", slug: "signature-titanium-spr", description: "SPR corridor apartments with group discount scope.", propertyType: "Apartment", possessionStatus: "Under Construction", city: "Gurugram", locality: "SPR", minPrice: "28500000", maxPrice: "52000000", isFeatured: true, developer: { companyName: "Signature Global" }, images: FALLBACK_IMAGE_SET.map((url, i) => ({ imageUrl: url, sortOrder: i })), units: [{ unitType: "3 BHK", superAreaSqft: 1900, price: "28500000" }] },
   { id: "whiteland-blissville", title: "Whiteland Blissville", slug: "whiteland-blissville", description: "Ready-to-move homes in Sector 76.", propertyType: "Apartment", possessionStatus: "Ready To Move", city: "Gurugram", locality: "Sector 76", minPrice: "22500000", maxPrice: "43000000", isPromising: true, developer: { companyName: "Whiteland Corporation" }, images: FALLBACK_IMAGE_SET.map((url, i) => ({ imageUrl: url, sortOrder: i })), units: [{ unitType: "2 BHK", superAreaSqft: 1400, price: "22500000" }, { unitType: "3 BHK", superAreaSqft: 2050, price: "33000000" }] },
+  { id: "dubai-harbour-residences", title: "Dubai Harbour Residences", slug: "dubai-harbour-residences", description: "Premium offshore investment with strong rental yields.", propertyType: "Apartment", possessionStatus: "Under Construction", city: "Dubai", locality: "Dubai Harbour", minPrice: "85000000", maxPrice: "150000000", isOffshore: true, developer: { companyName: "Emaar Properties" }, images: FALLBACK_IMAGE_SET.map((url, i) => ({ imageUrl: url, sortOrder: i })), units: [{ unitType: "2 BHK", superAreaSqft: 1200, price: "85000000" }] },
 ];
 
-export const fallbackDevelopers: Developer[] = [
-  { id: "godrej", companyName: "Godrej", headquartersCity: "Mumbai", _count: { properties: 12 } },
-  { id: "dlf", companyName: "DLF", headquartersCity: "Gurugram", _count: { properties: 18 } },
-  { id: "m3m", companyName: "M3M", headquartersCity: "Gurugram", _count: { properties: 9 } },
-  { id: "emaar", companyName: "Emaar", headquartersCity: "Gurugram", _count: { properties: 7 } },
-];
+export const fallbackDevelopers: Developer[] = mockDevelopers;
 
 async function safeFetch<T>(path: string): Promise<T | null> {
   try {
@@ -160,7 +163,38 @@ async function safeFetch<T>(path: string): Promise<T | null> {
 export function getAssetUrl(image?: string | null) {
   if (!image) return null;
   if (/^https?:\/\//.test(image)) return image;
+  if (image.startsWith("/")) return image;
   return `${ASSET_BASE}/uploads/${image.replace(/^\/+/, "")}`;
+}
+
+function hasUsableDeveloperLogo(item: Developer) {
+  const url = item.logoUrl || "";
+  if (!url) return false;
+  if (/faker|loremflickr|picsum|placehold/i.test(url)) return false;
+  return true;
+}
+
+function findMockLogoMatch(developer: Developer) {
+  const name = developer.companyName?.toLowerCase() || "";
+  return mockDevelopers.find((mock) => {
+    const mockName = mock.companyName.toLowerCase();
+    const mockToken = mockName.split(" ")[0];
+    return name.includes(mockToken) || mockName.includes(name.split(" ")[0] || "");
+  });
+}
+
+function enrichDeveloperWithLogo(developer: Developer): Developer {
+  if (hasUsableDeveloperLogo(developer)) return developer;
+  const match = findMockLogoMatch(developer);
+  if (!match) return developer;
+  return {
+    ...developer,
+    logoUrl: match.logoUrl,
+    bannerImageUrl: developer.bannerImageUrl || match.bannerImageUrl,
+    description: developer.description || match.description,
+    headquartersCity: developer.headquartersCity || match.headquartersCity,
+    websiteUrl: developer.websiteUrl || match.websiteUrl,
+  };
 }
 
 const PROPERTY_CAROUSEL_FALLBACKS = [
@@ -193,6 +227,7 @@ function filterFallbackProperties(params?: Record<string, string | number | bool
   const isPreLaunch = params?.isPreLaunch === true || params?.isPreLaunch === "true";
   const isFastSelling = params?.isFastSelling === true || params?.isFastSelling === "true";
   const isPromising = params?.isPromising === true || params?.isPromising === "true";
+  const isOffshore = params?.isOffshore === true || params?.isOffshore === "true";
 
   return fallbackProperties.filter((property) => {
     const text = [
@@ -216,6 +251,7 @@ function filterFallbackProperties(params?: Record<string, string | number | bool
     if (isPreLaunch && !property.isPreLaunch) return false;
     if (isFastSelling && !property.isFastSelling) return false;
     if (isPromising && !property.isPromising) return false;
+    if (isOffshore && !property.isOffshore) return false;
     return true;
   });
 }
@@ -235,7 +271,7 @@ export async function getFeaturedProperties() {
   return result?.data?.length ? result.data : fallbackProperties.filter((item) => item.isFeatured).slice(0, 3);
 }
 
-export async function getHomeSectionProperties(flag: "isFastSelling" | "isPreLaunch" | "isFeatured" | "isPromising", limit = 10) {
+export async function getHomeSectionProperties(flag: "isFastSelling" | "isPreLaunch" | "isFeatured" | "isPromising" | "isOffshore", limit = 10) {
   const result = await getProperties({ [flag]: true, limit });
   return result.properties.slice(0, limit);
 }
@@ -265,13 +301,19 @@ export async function getProperty(idOrSlug: string, cookieHeader?: string, skipV
 }
 
 export async function getDevelopers() {
-  const result = await safeFetch<ApiList<Developer>>("/developers?limit=30&status=ACTIVE");
+  const result = await safeFetch<ApiList<Developer>>("/developers?limit=100&status=ACTIVE");
   return result?.data?.length ? result.data : fallbackDevelopers;
 }
 
 export async function getPartnerDevelopers() {
   const developers = await getDevelopers();
-  return developers.filter((item) => item.partnershipStatus !== "TERMINATED" && item.partnershipStatus !== "SUSPENDED");
+  const active = developers
+    .filter((item) => item.partnershipStatus !== "TERMINATED" && item.partnershipStatus !== "SUSPENDED")
+    .map(enrichDeveloperWithLogo);
+
+  const withLogos = active.filter(hasUsableDeveloperLogo);
+  if (withLogos.length >= 4) return withLogos;
+  return mockDevelopers;
 }
 
 export async function authRequest(path: "/auth/login" | "/auth/register", body: Record<string, string>) {
@@ -670,7 +712,9 @@ export type HeroSlideTags = {
 
 export async function getHeroSlides(): Promise<HeroSlide[]> {
   const payload = await safeFetch<ApiItem<HeroSlide[]>>("/hero-slides");
-  return (payload?.data || []).map((slide) => ({
+  const slides = payload?.data || [];
+  const source = slides.length ? slides : mockHeroSlides;
+  return source.map((slide) => ({
     ...slide,
     imageUrl: getAssetUrl(slide.imageUrl) || slide.imageUrl,
   }));
@@ -724,19 +768,48 @@ export type ShowcaseVideo = {
   title: string;
   subtitle: string;
   videoUrl: string;
-  posterUrl: string;
+  posterUrl?: string | null;
   sortOrder?: number;
   isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
 };
 
+export type YoutubeChannelConfig = {
+  id: string;
+  channelName: string;
+  channelUrl: string;
+  metadataText?: string | null;
+  updatedAt?: string;
+};
+
+export async function getYoutubeChannel(): Promise<YoutubeChannelConfig | null> {
+  const payload = await safeFetch<ApiItem<YoutubeChannelConfig>>("/youtube-channel");
+  return payload?.data || mockYoutubeChannel;
+}
+
+export async function getYoutubeChannelAdmin(): Promise<YoutubeChannelConfig | null> {
+  const response = await api.get("/youtube-channel/admin");
+  return response.data?.data || null;
+}
+
+export async function updateYoutubeChannel(data: {
+  channelName: string;
+  channelUrl: string;
+  metadataText?: string | null;
+}): Promise<YoutubeChannelConfig> {
+  const response = await api.patch("/youtube-channel", data);
+  if (!response.data?.success) throw new Error(response.data?.message || "Update failed");
+  return response.data.data;
+}
+
 export async function getShowcaseVideos(): Promise<ShowcaseVideo[]> {
   const payload = await safeFetch<ApiItem<ShowcaseVideo[]>>("/showcase-videos");
-  return (payload?.data || []).map((video) => ({
+  const videos = payload?.data?.length ? payload.data : mockShowcaseVideos;
+  return videos.map((video) => ({
     ...video,
     videoUrl: getAssetUrl(video.videoUrl) || video.videoUrl,
-    posterUrl: getAssetUrl(video.posterUrl) || video.posterUrl,
+    posterUrl: video.posterUrl ? (getAssetUrl(video.posterUrl) || video.posterUrl) : null,
   }));
 }
 

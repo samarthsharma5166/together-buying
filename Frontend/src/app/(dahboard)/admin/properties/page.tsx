@@ -128,6 +128,7 @@ export default function AdminPropertiesPage() {
   const [isPreLaunch, setIsPreLaunch] = useState(false);
   const [isFastSelling, setIsFastSelling] = useState(false);
   const [isPromising, setIsPromising] = useState(false);
+  const [isOffshore, setIsOffshore] = useState(false);
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [metaTitle, setMetaTitle] = useState("");
@@ -334,6 +335,7 @@ export default function AdminPropertiesPage() {
     setIsPreLaunch(prop.isPreLaunch || false);
     setIsFastSelling(prop.isFastSelling || false);
     setIsPromising(prop.isPromising || false);
+    setIsOffshore(prop.isOffshore || false);
     setLatitude(prop.latitude ? String(prop.latitude) : "");
     setLongitude(prop.longitude ? String(prop.longitude) : "");
     setMetaTitle(prop.metaTitle || "");
@@ -406,6 +408,7 @@ export default function AdminPropertiesPage() {
       isPreLaunch,
       isFastSelling,
       isPromising,
+      isOffshore,
       units: formattedUnits,
       highlights,
       amenities,
@@ -466,7 +469,7 @@ export default function AdminPropertiesPage() {
 
   const handleToggleSectionFlag = async (
     id: string,
-    field: "isFastSelling" | "isPromising" | "isPreLaunch",
+    field: "isFastSelling" | "isPromising" | "isPreLaunch" | "isOffshore",
     currentVal: boolean
   ) => {
     try {
@@ -850,6 +853,18 @@ export default function AdminPropertiesPage() {
                       <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
+                          id={`offshore-${prop.id}`}
+                          checked={prop.isOffshore || false}
+                          onChange={() => handleToggleSectionFlag(prop.id, "isOffshore", prop.isOffshore || false)}
+                          className="h-4 w-4 text-[#e34b32] border-slate-300 rounded focus:ring-0 cursor-pointer"
+                        />
+                        <label htmlFor={`offshore-${prop.id}`} className="text-[10px] font-bold uppercase text-slate-400 cursor-pointer">
+                          Offshore
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
                           id={`promising-${prop.id}`}
                           checked={prop.isPromising || false}
                           onChange={() => handleToggleSectionFlag(prop.id, "isPromising", prop.isPromising || false)}
@@ -1199,6 +1214,18 @@ export default function AdminPropertiesPage() {
                     />
                     <label htmlFor="fast-selling" className="text-xs font-black uppercase text-slate-600 cursor-pointer">
                       Fast Selling
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="offshore"
+                      checked={isOffshore}
+                      onChange={(e) => setIsOffshore(e.target.checked)}
+                      className="h-4.5 w-4.5 text-[#e34b32] border-slate-300 rounded cursor-pointer"
+                    />
+                    <label htmlFor="offshore" className="text-xs font-black uppercase text-slate-600 cursor-pointer">
+                      Offshore Opportunities
                     </label>
                   </div>
                   <div className="flex items-center gap-2">

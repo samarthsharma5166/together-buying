@@ -6,8 +6,11 @@ import {
   deleteShowcaseVideo,
   getAssetUrl,
   getShowcaseVideosAdmin,
+  getYoutubeChannelAdmin,
   ShowcaseVideo,
   updateShowcaseVideo,
+  updateYoutubeChannel,
+  YoutubeChannelConfig,
 } from "@/lib/api";
 import {
   AlertTriangle,
@@ -18,6 +21,7 @@ import {
   Trash2,
   Upload,
   Video,
+  Youtube,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,13 +48,29 @@ export default function AdminShowcaseVideosPage() {
   const [newVideoFile, setNewVideoFile] = useState<File | null>(null);
   const [newPosterFile, setNewPosterFile] = useState<File | null>(null);
   const [drafts, setDrafts] = useState<Record<string, DraftFields>>({});
+  const [channel, setChannel] = useState<YoutubeChannelConfig | null>(null);
+  const [channelDraft, setChannelDraft] = useState({
+    channelName: "",
+    channelUrl: "",
+    metadataText: "",
+  });
+  const [newYoutubeUrl, setNewYoutubeUrl] = useState("");
+  const [savingChannel, setSavingChannel] = useState(false);
 
   const loadVideos = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getShowcaseVideosAdmin();
+      const [data, channelData] = await Promise.all([getShowcaseVideosAdmin(), getYoutubeChannelAdmin()]);
       setVideos(data);
+      setChannel(channelData);
+      if (channelData) {
+        setChannelDraft({
+          channelName: channelData.channelName,
+          channelUrl: channelData.channelUrl,
+          metadataText: channelData.metadataText || "",
+        });
+      }
       setDrafts(
         Object.fromEntries(
           data.map((video) => [
@@ -74,8 +94,31 @@ export default function AdminShowcaseVideosPage() {
     setNewVideo(EMPTY_DRAFT);
     setNewVideoFile(null);
     setNewPosterFile(null);
+    setNewYoutubeUrl("");
     if (videoInputRef.current) videoInputRef.current.value = "";
     if (posterInputRef.current) posterInputRef.current.value = "";
+  };
+
+  const handleSaveChannel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!channelDraft.channelName.trim() || !channelDraft.channelUrl.trim()) {
+      setError("Channel name and URL are required");
+      return;
+    }
+    setSavingChannel(true);
+    setError(null);
+    try {
+      await updateYoutubeChannel({
+        channelName: channelDraft.channelName.trim(),
+        channelUrl: channelDraft.channelUrl.trim(),
+        metadataText: channelDraft.metadataText.trim() || null,
+      });
+      await loadVideos();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || "Failed to save channel");
+    } finally {
+      setSavingChannel(false);
+    }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -84,12 +127,12 @@ export default function AdminShowcaseVideosPage() {
       setError("Title and subtitle are required");
       return;
     }
-    if (!newVideoFile && !newPosterFile) {
-      setError("Video and poster image are required");
+    if (!newVideoFile && !newYoutubeUrl.trim()) {
+      setError("Video file or YouTube URL is required");
       return;
     }
-    if (!newVideoFile || !newPosterFile) {
-      setError("Both video file and poster image are required");
+    if (newVideoFile && !newPosterFile) {
+      setError("Poster image is required when uploading a video file");
       return;
     }
 
@@ -99,8 +142,9 @@ export default function AdminShowcaseVideosPage() {
       await createShowcaseVideo({
         title: newVideo.title.trim(),
         subtitle: newVideo.subtitle.trim(),
-        video: newVideoFile,
-        poster: newPosterFile,
+        video: newVideoFile || undefined,
+        poster: newPosterFile || undefined,
+        videoUrl: newYoutubeUrl.trim() || undefined,
       });
       resetCreateForm();
       await loadVideos();
@@ -197,9 +241,9 @@ export default function AdminShowcaseVideosPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-widest text-[#e34b32]">Homepage</p>
-          <h1 className="font-display text-3xl font-black text-slate-800 mt-1">Showcase Videos</h1>
+          <h1 className="font-display text-3xl font-black text-slate-800 mt-1">Video Gallery</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Add video tours with title and subtitle shown on the homepage carousel.
+            Add YouTube URLs or video files for the homepage video gallery with subscribe button.
           </p>
         </div>
       </div>
@@ -210,6 +254,54 @@ export default function AdminShowcaseVideosPage() {
           {error}
         </div>
       )}
+
+      <form
+        onSubmit={handleSaveChannel}
+        className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm space-y-4"
+      >
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff3ef] text-[#e34b32]">
+            <Youtube size={22} />
+          </div>
+          <div>
+            <h2 className="font-display text-xl font-black text-slate-800">YouTube Channel Settings</h2>
+            <p className="text-sm text-slate-500">Subscribe button redirects users to this channel</p>
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <input
+            value={channelDraft.channelName}
+            onChange={(e) => setChannelDraft((prev) => ({ ...prev, channelName: e.target.value }))}
+            placeholder="Channel name e.g. GroupBuying Official"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
+            required
+          />
+          <input
+            value={channelDraft.channelUrl}
+            onChange={(e) => setChannelDraft((prev) => ({ ...prev, channelUrl: e.target.value }))}
+            placeholder="Channel URL e.g. https://youtube.com/@channel"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
+            required
+          />
+          <input
+            value={channelDraft.metadataText}
+            onChange={(e) => setChannelDraft((prev) => ({ ...prev, metadataText: e.target.value }))}
+            placeholder="Metadata e.g. 823K views · 4 days ago"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={savingChannel}
+          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#111111] px-5 py-3 text-sm font-black text-white transition hover:bg-black disabled:opacity-60"
+        >
+          {savingChannel ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+          {savingChannel ? "Saving..." : "Save Channel Settings"}
+        </button>
+        {channel && (
+          <p className="text-xs text-slate-500">Current channel: {channel.channelName}</p>
+        )}
+      </form>
 
       <form
         onSubmit={handleCreate}
@@ -245,7 +337,18 @@ export default function AdminShowcaseVideosPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
-              Video file
+              YouTube URL (recommended)
+            </label>
+            <input
+              value={newYoutubeUrl}
+              onChange={(e) => setNewYoutubeUrl(e.target.value)}
+              placeholder="https://www.youtube.com/watch?v=..."
+              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
+            />
+          </div>
+          <div>
+            <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
+              Or upload video file
             </label>
             <input
               ref={videoInputRef}
@@ -253,12 +356,11 @@ export default function AdminShowcaseVideosPage() {
               accept="video/mp4,video/webm,video/quicktime"
               className="w-full text-sm"
               onChange={(e) => setNewVideoFile(e.target.files?.[0] || null)}
-              required
             />
           </div>
-          <div>
+          <div className="sm:col-span-2">
             <label className="mb-2 block text-xs font-black uppercase tracking-wider text-slate-500">
-              Poster image
+              Poster image (optional for YouTube — auto thumbnail used)
             </label>
             <input
               ref={posterInputRef}
@@ -266,7 +368,6 @@ export default function AdminShowcaseVideosPage() {
               accept="image/jpeg,image/png,image/webp,image/gif"
               className="w-full text-sm"
               onChange={(e) => setNewPosterFile(e.target.files?.[0] || null)}
-              required
             />
           </div>
         </div>

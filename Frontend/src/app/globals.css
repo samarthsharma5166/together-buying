@@ -162,6 +162,42 @@ textarea {
   animation-play-state: paused;
 }
 
+.partner-marquee-mask {
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
+
+.partner-marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 0.75rem;
+}
+
+.partner-marquee-group {
+  display: flex;
+  gap: 0.75rem;
+  padding-right: 0.75rem;
+}
+
+.partner-marquee-left {
+  animation: partner-marquee-left 40s linear infinite;
+}
+
+.partner-marquee-right {
+  animation: partner-marquee-right 40s linear infinite;
+}
+
+.partner-marquee-mask:hover .partner-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (max-width: 640px) {
+  .partner-marquee-left,
+  .partner-marquee-right {
+    animation-duration: 28s;
+  }
+}
+
 .soft-card {
   background: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(255, 255, 255, 1);
@@ -1026,6 +1062,24 @@ textarea {
 @keyframes marquee {
   to {
     transform: translateX(-50%);
+  }
+}
+
+@keyframes partner-marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes partner-marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
   }
 }
 

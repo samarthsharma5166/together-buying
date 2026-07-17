@@ -5,6 +5,7 @@ import { prisma } from "../db/db.js";
 import AppError from "../utils/error.utils.js";
 import { tryCatch } from "../utils/tryCatch.js";
 import { createShowcaseVideoSchema, updateShowcaseVideoSchema } from "../schemas/showcaseVideo.schemas.js";
+import { extractYoutubeId, isYoutubeUrl, youtubeThumbnail } from "../utils/youtube.utils.js";
 
 const deleteFileSafe = (filename: string | null | undefined) => {
   if (!filename || /^https?:\/\//i.test(filename)) return;
@@ -54,9 +55,15 @@ export const createShowcaseVideo = tryCatch(async (req: Request, res: Response) 
 
   const parsed = createShowcaseVideoSchema.parse(req.body);
   const videoUrl = resolveMediaValue(videoFile?.filename, parsed.videoUrl);
-  const posterUrl = resolveMediaValue(posterFile?.filename, parsed.posterUrl);
+  let posterUrl = resolveMediaValue(posterFile?.filename, parsed.posterUrl);
 
   if (!videoUrl) throw new AppError("Video file or video URL is required", 400);
+
+  if (!posterUrl && videoUrl && isYoutubeUrl(videoUrl)) {
+    const videoId = extractYoutubeId(videoUrl);
+    if (videoId) posterUrl = youtubeThumbnail(videoId);
+  }
+
   if (!posterUrl) throw new AppError("Poster image or poster URL is required", 400);
 
   try {
@@ -103,10 +110,16 @@ export const updateShowcaseVideo = tryCatch(async (req: Request, res: Response) 
   if (parsed.isActive !== undefined) data.isActive = parsed.isActive;
 
   const nextVideoUrl = resolveMediaValue(videoFile?.filename, parsed.videoUrl);
-  const nextPosterUrl = resolveMediaValue(posterFile?.filename, parsed.posterUrl);
+  let nextPosterUrl = resolveMediaValue(posterFile?.filename, parsed.posterUrl);
 
   if (nextVideoUrl) data.videoUrl = nextVideoUrl;
   if (nextPosterUrl) data.posterUrl = nextPosterUrl;
+
+  const resolvedVideoUrl = data.videoUrl || existing.videoUrl;
+  if (!data.posterUrl && resolvedVideoUrl && isYoutubeUrl(resolvedVideoUrl)) {
+    const videoId = extractYoutubeId(resolvedVideoUrl);
+    if (videoId) data.posterUrl = youtubeThumbnail(videoId);
+  }
 
   try {
     const video = await prisma.showcaseVideo.update({ where: { id }, data });

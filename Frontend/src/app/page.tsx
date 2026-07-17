@@ -1,40 +1,46 @@
-import { ArrowRight, BadgeCheck, Building2, CalendarDays, CheckCircle2, Gift, MapPin, Play, ShieldCheck, Sparkles } from "lucide-react";
-import Link from "next/link";
+import { ArrowRight, BadgeCheck, Building2, CheckCircle2, MapPin, Play, ShieldCheck, Sparkles } from "lucide-react";
 import { AnimatedCounter } from "@/components/animated-counter";
 import { HighlightedHeading } from "@/components/highlighted-heading";
 import { ButtonLink } from "@/components/button";
 import { CalculatorShowcase } from "@/components/calculator-showcase";
 import { ContactForm } from "@/components/contact-form";
 import { FAQAccordion } from "@/components/faq-accordion";
-// import { PropertyCard } from "@/components/property-card";
 import { PropertyCarousel } from "@/components/property-carousel";
 import { PartnerLogoGrid } from "@/components/partner-logo-grid";
 import { ReviewStrip } from "@/components/review-strip";
 import { Section } from "@/components/section";
 import { StepTimeline } from "@/components/step-timeline";
 import { VideoShowcase } from "@/components/video-showcase";
-import { articles, faqs, stats, steps, testimonials, valueCards } from "@/lib/content";
-import { getFeaturedProperties, getHeroSlides, getHomeSectionProperties, getBlogs, getPartnerDevelopers, getShowcaseVideos } from "@/lib/api";
+import { YoutubeGallery } from "@/components/youtube-gallery";
+import { faqs, stats, steps, valueCards } from "@/lib/content";
+import { testimonialMocks } from "@/lib/mock-data";
+import { getFeaturedProperties, getHeroSlides, getHomeSectionProperties, getPartnerDevelopers, getShowcaseVideos, getYoutubeChannel } from "@/lib/api";
 import { HeroImageCarousel } from "@/components/hero-image-carousel";
 import { HeroToolCards } from "@/components/hero-tool-cards";
+import { isYoutubeUrl } from "@/lib/youtube";
 
 export default async function HomePage() {
-  const [fastSelling, preLaunch, featured, promising, partnerDevelopers, heroSlides, blogs, showcaseVideos] = await Promise.all([
+  const [fastSelling, preLaunch, featured, offshore, promising, partnerDevelopers, heroSlides, showcaseVideos, youtubeChannel] = await Promise.all([
     getHomeSectionProperties("isFastSelling"),
     getHomeSectionProperties("isPreLaunch"),
     getFeaturedProperties(),
+    getHomeSectionProperties("isOffshore"),
     getHomeSectionProperties("isPromising"),
     getPartnerDevelopers(),
     getHeroSlides(),
-    getBlogs(),
     getShowcaseVideos(),
+    getYoutubeChannel(),
   ]);
   const propertyGroups = [
-    { title: "Fast Selling Properties", text: "High-demand projects with live buyer activity.", items: fastSelling },
-    { title: "Pre Launch Properties", text: "Early access projects with stronger saving potential.", items: preLaunch },
-    { title: "Featured Properties", text: "Curated premium inventory for group negotiation.", items: featured },
-    { title: "Promising Plots / Villas", text: "Handpicked plot and villa projects with strong appreciation potential.", items: promising },
+    { title: "Fast Selling Properties", text: "High-demand projects with live buyer activity", items: fastSelling },
+    { title: "Pre Launch Properties", text: "Early access projects with stronger saving potential", items: preLaunch },
+    { title: "Featured Properties", text: "Curated premium inventory for group negotiation", items: featured },
+    { title: "Offshore Opportunities", text: "Premium global investment projects for NRI and offshore buyers", items: offshore },
+    { title: "Promising Plots / Villas", text: "Handpicked plot and villa projects with strong appreciation potential", items: promising },
   ].filter((group) => group.items.length > 0);
+
+  const nativeVideos = showcaseVideos.filter((video) => !isYoutubeUrl(video.videoUrl));
+  const youtubeVideos = showcaseVideos.filter((video) => isYoutubeUrl(video.videoUrl));
 
   return (
     <main>
@@ -97,31 +103,44 @@ export default async function HomePage() {
 
       <HeroToolCards />
 
-      <Section className="pt-12 sm:pt-14 lg:pt-16" eyebrow="Shared dreams. Smart ownership." title="Buyers on GroupBuying save 10-15% more" description="We negotiate directly with developers as a group, unlock prices usually reserved for institutions, and pass back broker commission as extra savings.">
+      <Section className="pt-12 sm:pt-14 lg:pt-16" eyebrow="Shared dreams, Smart ownership" title="Buyers on GroupBuying save 10-15% more" description="We negotiate directly with developers as a group, unlock prices usually reserved for institutions, and pass back broker commission as extra savings.">
         <div className="grid gap-4 md:grid-cols-4">{stats.map((stat) => <div key={stat.label} className="stagger-card magnetic-card hover-lift rounded-[1.75rem] bg-white p-6 text-center premium-border"><p className="font-display text-4xl font-black text-[#df432c]"><AnimatedCounter value={stat.value} /></p><p className="mt-2 text-sm font-bold text-slate-500">{stat.label}</p></div>)}</div>
       </Section>
 
       {propertyGroups.map((group) => (
-        <Section key={group.title} eyebrow={group.title} title={group.text} headingAlign="left">
+        <Section key={group.title} title={group.title} eyebrow={group.text} headingAlign="left" headingSize="property">
           <PropertyCarousel properties={group.items} groupTitle={group.title} />
         </Section>
       ))}
 
-      <Section className="overflow-visible bg-[#fff6f2] py-8 md:py-10 [&_.mb-8]:mb-4" eyebrow="Explore Projects Through Video" title="Explore Projects Through Video" description="Experience our handpicked real estate projects through immersive video tours.">
-        <VideoShowcase videos={showcaseVideos} />
+      <Section className="overflow-visible py-8 md:py-10 [&_.mb-8]:mb-2" eyebrow="Immersive walkthroughs" title="Explore properties through video tours">
+        <VideoShowcase videos={nativeVideos} />
+      </Section>
+
+      <Section className="overflow-visible bg-[#fff6f2] py-8 md:py-10 [&_.mb-8]:mb-4" title="Video Gallery" description="Watch project walkthroughs, buyer stories and expert insights from our official channel.">
+        <YoutubeGallery videos={youtubeVideos} channel={youtubeChannel} />
       </Section>
 
       <Section id="about" className="bg-[#fff6f2]" eyebrow="Why GroupBuying" title="Unlock unbeatable deals through group buying">
-        <div className="grid gap-5 md:grid-cols-3">{valueCards.map((card) => <div key={card.title} className="stagger-card magnetic-card hover-lift rounded-[2rem] bg-white p-7 premium-border"><div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff3ef] text-[#e34b32]"><Gift /></div><p className="font-display text-2xl font-black text-[#111111]">{card.title}</p><p className="mt-3 text-sm leading-7 text-slate-600">{card.text}</p><p className="mt-5 rounded-full bg-[#111111] px-4 py-2 text-center text-sm font-black text-white">{card.metric}</p></div>)}</div>
+        <div className="grid gap-5 md:grid-cols-3">{valueCards.map((card) => <div key={card.title} className="stagger-card magnetic-card hover-lift rounded-[2rem] bg-white p-7 premium-border"><div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fff3ef] text-[#e34b32]"><Sparkles /></div><p className="font-display text-2xl font-black text-[#111111]">{card.title}</p><p className="mt-3 text-sm leading-7 text-slate-600">{card.text}</p><p className="mt-5 rounded-full bg-[#111111] px-4 py-2 text-center text-sm font-black text-white">{card.metric}</p></div>)}</div>
       </Section>
 
       <Section id="calculators" className="bg-[#fff6f2]" eyebrow="Calculate Savings" title="Save more and more with GroupBuying">
         <CalculatorShowcase />
       </Section>
 
-      <Section 
-        className="py-10 md:py-14" 
-        title={<HighlightedHeading before="Our" highlight="Top Developer" after="Partners" />}
+      <Section
+        className="py-10 md:py-14"
+        headingSize="featured"
+        headingAlign="left"
+        title={
+          <HighlightedHeading
+            before="Our"
+            highlight="Top Developer"
+            after="Partners"
+            className="text-3xl md:text-4xl lg:text-[2.75rem]"
+          />
+        }
       >
         <PartnerLogoGrid developers={partnerDevelopers} />
       </Section>
@@ -130,15 +149,16 @@ export default async function HomePage() {
         <StepTimeline steps={steps} />
       </Section>
 
-      <Section 
-        className="real-estate-story-bg text-white" 
-        title="What our customers Say" 
+      <Section
+        className="real-estate-story-bg text-white"
+        title="What our customers Say"
         description="Real stories from our community members who unlocked developer-direct savings on their dream homes through GroupBuying."
+        headingSize="featured"
       >
-        <ReviewStrip testimonials={testimonials} />
+        <ReviewStrip testimonials={testimonialMocks} />
       </Section>
 
-      <Section id="faqs" eyebrow="FAQs" title="You have questions. We have answers."><FAQAccordion items={faqs} /></Section>
+      <Section id="faqs" eyebrow="FAQs" title="You have questions, We have answers"><FAQAccordion items={faqs} /></Section>
 
       <Section className="pb-18" eyebrow="Stay Informed, Save More" title="Get in touch with a GroupBuying expert">
         <div className="visit-panel-bg grid items-center gap-6 rounded-[2rem] p-5 text-white shadow-[0_24px_70px_rgba(10,120,105,.18)] md:grid-cols-[1fr_380px] md:p-7">
@@ -149,5 +169,3 @@ export default async function HomePage() {
     </main>
   );
 }
-
-

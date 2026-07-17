@@ -147,6 +147,7 @@ model Property {
   isPreLaunch   Boolean @default(false)
   isFastSelling Boolean @default(false) @map("is_fast_selling")
   isPromising   Boolean @default(false) @map("is_promising")
+  isOffshore    Boolean @default(false) @map("is_offshore")
 
   views Int @default(0)
 
@@ -426,13 +427,23 @@ model ShowcaseVideo {
   title     String
   subtitle  String
   videoUrl  String   @map("video_url")
-  posterUrl String   @map("poster_url")
+  posterUrl String?  @map("poster_url")
   sortOrder Int      @default(0) @map("sort_order")
   isActive  Boolean  @default(true) @map("is_active")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("showcase_videos")
+}
+
+model YoutubeChannelConfig {
+  id           String   @id @default("default")
+  channelName  String   @map("channel_name")
+  channelUrl   String   @map("channel_url")
+  metadataText String?  @map("metadata_text")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("youtube_channel_config")
 }
 
 model Blog {

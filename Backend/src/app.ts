@@ -1,6 +1,5 @@
 // package import
 import express from 'express'
-import dotenv from 'dotenv'
 
 // routes import 
 import authrouter from './routes/auth.routes.js'
@@ -13,6 +12,7 @@ import subscriptionRouter from './routes/subscription.routes.js'
 import transectionRouter from './routes/transection.routes.js'
 import heroSlideRouter from './routes/heroSlide.routes.js'
 import showcaseVideoRouter from './routes/showcaseVideo.routes.js'
+import youtubeChannelRouter from './routes/youtubeChannel.routes.js'
 import blogRouter from './routes/blog.routes.js'
 import leadRouter from './routes/lead.routes.js'
 
@@ -21,13 +21,25 @@ import cookieParser from 'cookie-parser'
 import errorMiddleware from './middlewares/error.middleware.js'
 import cors from 'cors'
 
-dotenv.config()
-
 const app = express();
+
+const allowedOrigins = [
+  process.env.FRONTEND_ORIGIN || "http://localhost:3000",
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+];
 
 // middleware configuration
 app.use(cors({
-  origin: process.env.FRONTEND_ORIGIN || "http://localhost:3000",
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(null, false);
+  },
   credentials: true,
 }));
 app.use(express.json());
@@ -59,6 +71,7 @@ app.use("/api/subscriptions", subscriptionRouter)
 app.use("/api/transections", transectionRouter)
 app.use("/api/hero-slides", heroSlideRouter)
 app.use("/api/showcase-videos", showcaseVideoRouter)
+app.use("/api/youtube-channel", youtubeChannelRouter)
 app.use("/api/blogs", blogRouter)
 app.use("/api/leads", leadRouter)
 

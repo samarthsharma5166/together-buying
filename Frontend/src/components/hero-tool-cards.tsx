@@ -4,6 +4,7 @@ import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { ArrowUpRight, Calculator, IndianRupee, Sparkles } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useRef } from "react";
+import { heroToolCardMocks } from "@/lib/mock-data";
 
 type ToolCardData = {
   icon: LucideIcon;
@@ -11,19 +12,16 @@ type ToolCardData = {
   text: string;
   badge: string;
   metric: string;
+  subMetric?: string;
   gradient: string;
   orb: string;
   ring: string;
   index: string;
 };
 
-const cards: ToolCardData[] = [
+const cardStyles = [
   {
     icon: Sparkles,
-    title: "Saving Intelligence",
-    text: "Group discounts, cashback and negotiated quotes in one view.",
-    badge: "Insights",
-    metric: "10-15%",
     gradient: "from-[#fff0eb] via-white to-[#fffaf8]",
     orb: "bg-[#e34b32]/20",
     ring: "border-[#e34b32]/20",
@@ -31,10 +29,6 @@ const cards: ToolCardData[] = [
   },
   {
     icon: Calculator,
-    title: "Saving Calculator",
-    text: "Estimate extra savings instantly from property price.",
-    badge: "Estimate",
-    metric: "Live",
     gradient: "from-[#fff8f5] via-white to-[#fff3ef]",
     orb: "bg-[#f3b64a]/22",
     ring: "border-[#f3b64a]/25",
@@ -42,16 +36,21 @@ const cards: ToolCardData[] = [
   },
   {
     icon: IndianRupee,
-    title: "EMI Calculator",
-    text: "Plan monthly EMIs before your site visit.",
-    badge: "Finance",
-    metric: "₹ EMI",
     gradient: "from-[#f8fafc] via-white to-[#fff6f2]",
     orb: "bg-[#111111]/10",
     ring: "border-slate-200",
     index: "03",
   },
 ];
+
+const cards: ToolCardData[] = heroToolCardMocks.map((mock, i) => ({
+  ...mock,
+  icon: cardStyles[i].icon,
+  gradient: cardStyles[i].gradient,
+  orb: cardStyles[i].orb,
+  ring: cardStyles[i].ring,
+  index: cardStyles[i].index,
+}));
 
 function ToolCard({ card, delay }: { card: ToolCardData; delay: number }) {
   const ref = useRef<HTMLAnchorElement>(null);
@@ -60,7 +59,7 @@ function ToolCard({ card, delay }: { card: ToolCardData; delay: number }) {
   const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [4, -4]), { stiffness: 280, damping: 24 });
   const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-4, 4]), { stiffness: 280, damping: 24 });
 
-  const { icon: Icon, title, text, badge, metric, gradient, orb, ring, index } = card;
+  const { icon: Icon, title, text, badge, metric, subMetric, gradient, orb, ring, index } = card;
 
   function handleMouseMove(event: React.MouseEvent<HTMLAnchorElement>) {
     const rect = ref.current?.getBoundingClientRect();
@@ -108,6 +107,9 @@ function ToolCard({ card, delay }: { card: ToolCardData; delay: number }) {
             <h3 className="font-display text-base font-black leading-snug text-[#111111] md:text-[1.05rem]">{title}</h3>
             <span className="shrink-0 rounded-lg border border-slate-100 bg-white/90 px-2 py-1 text-right shadow-sm">
               <span className="block font-display text-sm font-black leading-none text-[#111111]">{metric}</span>
+              {subMetric ? (
+                <span className="mt-0.5 block text-[9px] font-bold uppercase tracking-wide text-slate-400">{subMetric}</span>
+              ) : null}
             </span>
           </div>
           <p className="mt-1.5 line-clamp-2 text-xs leading-5 text-slate-600">{text}</p>
