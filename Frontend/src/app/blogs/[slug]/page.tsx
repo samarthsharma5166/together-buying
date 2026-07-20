@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import { BlogComments } from "@/components/blog-comments";
 import { ButtonLink } from "@/components/button";
+import { RequireAuth } from "@/components/require-auth";
 import { ShareButton } from "@/components/share-button";
 import { getBlogBySlug, getBlogs, getSimilarBlogs } from "@/lib/api";
 import {
@@ -88,10 +90,19 @@ export async function generateStaticParams() {
 
 export default async function BlogDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const apiBlog = await getBlogBySlug(slug);
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore.toString();
+  const redirectTo = `/blogs/${slug}`;
+  const hasAuth = Boolean(cookieStore.get("token")?.value);
+
+  if (!hasAuth) {
+    return <RequireAuth redirectTo={redirectTo}>{null}</RequireAuth>;
+  }
+
+  const apiBlog = await getBlogBySlug(slug, cookieHeader);
   const blog = apiBlog ?? getDummyBlogBySlug(slug);
   const isDummy = !apiBlog;
-console.log(blog)
+
   if (!blog) notFound();
 
   const apiSimilar = isDummy ? [] : await getSimilarBlogs(slug, 3);
@@ -101,6 +112,7 @@ console.log(blog)
     : "GroupBuying Editorial";
 
   return (
+    <RequireAuth redirectTo={redirectTo}>
     <main className="bg-[#faf8f6]">
       {/* Top bar */}
       <div className="border-b border-slate-200/80 bg-white/80 backdrop-blur">
@@ -342,5 +354,6 @@ console.log(blog)
         </section>
       )}
     </main>
+    </RequireAuth>
   );
 }

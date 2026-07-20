@@ -979,9 +979,18 @@ export async function getArticlesListing(params?: {
   };
 }
 
-export async function getArticleBySlug(slug: string): Promise<Article | null> {
-  const payload = await safeFetch<ApiItem<Article>>(`/articles/${slug}`);
-  return payload?.data ? mapArticleCover(payload.data) : null;
+export async function getArticleBySlug(
+  slug: string,
+  cookieHeader?: string
+): Promise<Article | null> {
+  try {
+    const headers = cookieHeader ? { Cookie: cookieHeader } : undefined;
+    const response = await api.get(`/articles/${slug}`, { headers });
+    const article = response.data?.data as Article | undefined;
+    return article ? mapArticleCover(article) : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getSimilarArticles(slug: string, limit = 3): Promise<Article[]> {
@@ -1192,9 +1201,18 @@ export async function getBlogsListing(params?: {
   };
 }
 
-export async function getBlogBySlug(slug: string): Promise<Blog | null> {
-  const payload = await safeFetch<ApiItem<Blog>>(`/blogs/${slug}`);
-  return payload?.data ? mapBlogCover(payload.data) : null;
+export async function getBlogBySlug(
+  slug: string,
+  cookieHeader?: string
+): Promise<Blog | null> {
+  try {
+    const headers = cookieHeader ? { Cookie: cookieHeader } : undefined;
+    const response = await api.get(`/blogs/${slug}`, { headers });
+    const blog = response.data?.data as Blog | undefined;
+    return blog ? mapBlogCover(blog) : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getSimilarBlogs(slug: string, limit = 3): Promise<Blog[]> {

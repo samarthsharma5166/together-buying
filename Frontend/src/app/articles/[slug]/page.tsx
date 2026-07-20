@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import {
   ArrowLeft,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import { ArticleComments } from "@/components/article-comments";
 import { ButtonLink } from "@/components/button";
+import { RequireAuth } from "@/components/require-auth";
 import { ShareButton } from "@/components/share-button";
 import { getArticleBySlug, getArticles, getSimilarArticles } from "@/lib/api";
 import {
@@ -78,7 +80,17 @@ export async function generateStaticParams() {
 
 export default async function ArticleDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const apiArticle = await getArticleBySlug(slug);
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore.toString();
+  const redirectTo = `/articles/${slug}`;
+  const hasAuth = Boolean(cookieStore.get("token")?.value);
+
+  // Guests: client RequireAuth sends them to login (no content leak via dummy fallback)
+  if (!hasAuth) {
+    return <RequireAuth redirectTo={redirectTo}>{null}</RequireAuth>;
+  }
+
+  const apiArticle = await getArticleBySlug(slug, cookieHeader);
   const article = apiArticle ?? getDummyArticleBySlug(slug);
   const isDummy = !apiArticle;
 
@@ -91,6 +103,7 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
     : "GroupBuying Editorial";
 
   return (
+    <RequireAuth redirectTo={redirectTo}>
     <main className="bg-[#faf8f6]">
       {/* Top bar */}
       <div className="border-b border-slate-200/80 bg-white/80 backdrop-blur">
@@ -332,5 +345,6 @@ export default async function ArticleDetailPage({ params }: { params: Promise<{ 
         </section>
       )}
     </main>
+    </RequireAuth>
   );
 }

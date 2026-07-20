@@ -31,7 +31,7 @@ router.get("/:slug/similar", getSimilarArticles);
 router.get("/:slug/comments", listArticleComments);
 router.post("/:slug/comments", createArticleComment);
 router.delete("/comments/:id", isAuthenticated, deleteArticleComment);
-router.get("/:slug", getArticleBySlug);
+router.get("/:slug", isAuthenticated, getArticleBySlug);
 router.post("/", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), runUpload(uploadArticleCover), createArticle);
 router.patch("/:id", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), runUpload(uploadArticleCover), updateArticle);
 router.delete("/:id", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), deleteArticle);

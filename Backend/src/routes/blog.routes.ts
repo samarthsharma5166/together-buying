@@ -39,7 +39,7 @@ router.get("/:slug/similar", getSimilarBlogs);
 router.get("/:slug/comments", listBlogComments);
 router.post("/:slug/comments", createBlogComment);
 router.delete("/comments/:id", isAuthenticated, deleteBlogComment);
-router.get("/:slug", getBlogBySlug);
+router.get("/:slug", isAuthenticated, getBlogBySlug);
 router.post("/", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), runUpload(uploadBlogCover), createBlog);
 router.patch("/:id", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), runUpload(uploadBlogCover), updateBlog);
 router.delete("/:id", isAuthenticated, authorizedRoles("ADMIN", "SUPER_ADMIN"), deleteBlog);
