@@ -32,7 +32,8 @@ import {
   CreditCard,
   ImageIcon,
   BookOpen,
-  Video
+  Video,
+  PenLine,
 } from "lucide-react";
 
 interface SidebarItem {
@@ -46,6 +47,7 @@ const adminNavItems: SidebarItem[] = [
   { label: "Hero Slides", href: "/admin/hero-slides", icon: ImageIcon },
   { label: "Showcase Videos", href: "/admin/showcase-videos", icon: Video },
   { label: "Articles", href: "/admin/articles", icon: BookOpen },
+  { label: "Blogs", href: "/admin/blogs", icon: PenLine },
   { label: "Properties", href: "/admin/properties", icon: Building2 },
   { label: "Developers", href: "/admin/developers", icon: Briefcase },
   { label: "Groups & RMs", href: "/admin/groups", icon: Users },

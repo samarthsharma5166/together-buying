@@ -58,6 +58,8 @@ const heroLimits = { fileSize: 15 * 1024 * 1024 };
 export const uploadHeroSlides = multer({ storage, fileFilter, limits: heroLimits }).array("images", 20);
 export const uploadHeroSlideImage = multer({ storage, fileFilter, limits: heroLimits }).single("image");
 export const uploadArticleCover = multer({ storage, fileFilter, limits: heroLimits }).single("coverImage");
+export const uploadBlogCover = multer({ storage, fileFilter, limits: heroLimits }).single("coverImage");
+export const uploadBlogImage = multer({ storage, fileFilter, limits: heroLimits }).single("image");
 
 const videoFileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const imageTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg", "image/gif", "image/heic", "image/heif", "image/avif"];

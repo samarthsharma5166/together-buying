@@ -8,6 +8,7 @@ export const navItems = [
 
 export const resourceNavItems = [
   { label: "Articles", href: "/articles" },
+  { label: "Blogs", href: "/blogs" },
   { label: "How It Works", href: "/how-it-works" },
   { label: "About Us", href: "/about" },
   { label: "FAQs", href: "/faqs" },

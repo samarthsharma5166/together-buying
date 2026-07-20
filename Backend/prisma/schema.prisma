@@ -107,6 +107,8 @@ model User {
   transactions      transections[]
   articles          Article[]
   articleComments   ArticleComment[]
+  blogs             Blog[]
+  blogComments      BlogComment[]
   leads             leads[]
   leadNotes         LeadNote[]
   @@map("users")
@@ -479,6 +481,40 @@ model ArticleComment {
 
   @@index([articleId])
   @@map("article_comments")
+}
+
+model Blog {
+  id            String        @id @default(uuid())
+  title         String
+  slug          String        @unique
+  excerpt       String?       @db.Text
+  content       String        @db.LongText
+  coverImageUrl String?       @map("cover_image_url")
+  category      String        @default("General")
+  readTimeMin   Int           @default(5) @map("read_time_min")
+  isPublished   Boolean       @default(false) @map("is_published")
+  authorId      String        @map("author_id")
+  author        User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments      BlogComment[]
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  @@map("blogs")
+}
+
+model BlogComment {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  guestName String?  @map("guest_name")
+  blogId    String   @map("blog_id")
+  blog      Blog     @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  authorId  String?  @map("author_id")
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([blogId])
+  @@map("blog_comments")
 }
 
 enum leadStatus {

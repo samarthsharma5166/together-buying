@@ -1552,3 +1552,108 @@ textarea {
   animation: shine 5.5s ease-in-out infinite;
   pointer-events: none;
 }
+/* TipTap typewriter editor */
+.typewriter-content p {
+  margin: 0 0 0.75rem;
+}
+.typewriter-content h2 {
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin: 1rem 0 0.5rem;
+}
+.typewriter-content h3 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 0.85rem 0 0.4rem;
+}
+.typewriter-content ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0 0 0.75rem;
+}
+.typewriter-content ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+  margin: 0 0 0.75rem;
+}
+.typewriter-content blockquote {
+  border-left: 3px solid #e34b32;
+  background: #fff8f5;
+  padding: 0.75rem 1rem;
+  margin: 0.75rem 0;
+}
+.typewriter-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  margin: 0.75rem 0;
+}
+.typewriter-content a {
+  color: #e34b32;
+  text-decoration: underline;
+}
+.typewriter-content p.is-editor-empty:first-child::before {
+  color: #94a3b8;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Public blog rich HTML body */
+.blog-body {
+  color: #334155;
+  font-size: 1.075rem;
+  line-height: 1.85;
+}
+.blog-body p {
+  margin: 0 0 1.5rem;
+}
+.blog-body h2 {
+  font-family: var(--font-display, inherit);
+  font-size: 1.65rem;
+  font-weight: 900;
+  color: #111;
+  margin: 2rem 0 0.75rem;
+}
+.blog-body h3 {
+  font-family: var(--font-display, inherit);
+  font-size: 1.3rem;
+  font-weight: 900;
+  color: #111;
+  margin: 1.5rem 0 0.6rem;
+}
+.blog-body ul,
+.blog-body ol {
+  margin: 0 0 1.5rem;
+  padding-left: 1.35rem;
+}
+.blog-body ul {
+  list-style: disc;
+}
+.blog-body ol {
+  list-style: decimal;
+}
+.blog-body li {
+  margin-bottom: 0.4rem;
+}
+.blog-body a {
+  color: #e34b32;
+  text-decoration: underline;
+  font-weight: 600;
+}
+.blog-body blockquote {
+  border-left: 3px solid #e34b32;
+  background: #fff8f5;
+  padding: 1.1rem 1.5rem;
+  margin: 2rem 0;
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+.blog-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 1rem;
+  margin: 1.5rem 0;
+}
