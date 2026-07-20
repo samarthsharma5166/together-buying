@@ -33,7 +33,8 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TypewriterEditor, isEmptyHtml } from "@/components/typewriter-editor";
+import { TypewriterEditor, isEmptyHtml, type TypewriterEditorHandle } from "@/components/typewriter-editor";
+import { revokeBlobUrl } from "@/lib/pending-blob-files";
 
 const EMPTY_FORM = {
   title: "",
@@ -70,6 +71,7 @@ function formatDate(dateStr?: string) {
 
 export default function AdminBlogsPage() {
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<TypewriterEditorHandle>(null);
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({
     total: 0,
@@ -128,6 +130,8 @@ export default function AdminBlogsPage() {
   }, [success]);
 
   const closeDrawer = () => {
+    editorRef.current?.discardPending();
+    revokeBlobUrl(coverPreview);
     setDrawerOpen(false);
     setEditingId(null);
     setForm(EMPTY_FORM);
@@ -137,6 +141,7 @@ export default function AdminBlogsPage() {
   };
 
   const openCreate = () => {
+    editorRef.current?.discardPending();
     setEditingId(null);
     setForm(EMPTY_FORM);
     setCoverFile(null);
@@ -146,6 +151,7 @@ export default function AdminBlogsPage() {
   };
 
   const openEdit = (blog: Blog) => {
+    editorRef.current?.discardPending();
     setForm({
       title: blog.title,
       excerpt: blog.excerpt || "",
@@ -184,7 +190,17 @@ export default function AdminBlogsPage() {
     setSaving(true);
     setError(null);
     try {
-      const payload = { ...form, coverImage: coverFile || undefined };
+      // Upload blob: previews to server only now — abandoned drafts leave no files
+      const content = editorRef.current
+        ? await editorRef.current.persistContent()
+        : form.content;
+
+      if (isEmptyHtml(content)) {
+        setError("Title and content are required");
+        return;
+      }
+
+      const payload = { ...form, content, coverImage: coverFile || undefined };
       if (editingId) {
         await updateBlog(editingId, payload);
         setSuccess("Blog updated");
@@ -645,12 +661,13 @@ export default function AdminBlogsPage() {
                     Content *
                   </label>
                   <TypewriterEditor
+                    ref={editorRef}
                     value={form.content}
                     onChange={(html) => setForm((prev) => ({ ...prev, content: html }))}
                     placeholder="Write with Bold, Italic, Underline, lists, links, and images…"
                   />
                   <p className="mt-1.5 text-[11px] font-semibold text-slate-400">
-                    Use the toolbar for formatting. Images upload to your server.
+                    Images are previewed locally and only uploaded when you save or publish.
                   </p>
                 </div>
 
@@ -745,6 +762,9 @@ export default function AdminBlogsPage() {
                   >
                     {coverPreview ? "Change image" : "Select image"}
                   </button>
+                  <p className="mt-2 text-[11px] font-semibold text-slate-400">
+                    Cover is previewed locally and uploads only when you save.
+                  </p>
                 </div>
               </div>
 

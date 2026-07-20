@@ -30,6 +30,7 @@ import {
   CircleGauge
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { revokeBlobUrl } from "@/lib/pending-blob-files";
 
 const LIMIT = 6;
 
@@ -67,8 +68,21 @@ export default function AdminDevelopersPage() {
   const [partnershipStatus, setPartnershipStatus] = useState<"ACTIVE" | "SUSPENDED" | "TERMINATED">("ACTIVE");
   const[logo,setLogo]=useState<File | null>(null)
   const[banner,setBanner]=useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
   // Delete State
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const clearAssetPreviews = () => {
+    revokeBlobUrl(logoPreview);
+    revokeBlobUrl(bannerPreview);
+    setLogo(null);
+    setBanner(null);
+    setLogoPreview(null);
+    setBannerPreview(null);
+    if (logoInputRef.current) logoInputRef.current.value = "";
+    if (bannerInputRef.current) bannerInputRef.current.value = "";
+  };
 
   // Run on mount and page changes
   const loadData = (currentPage: number) => {
@@ -111,8 +125,7 @@ export default function AdminDevelopersPage() {
     setDescription("");
     setReraRegistered(false);
     setPartnershipStatus("ACTIVE");
-    setLogo(null);
-    setBanner(null);
+    clearAssetPreviews();
     dispatch(clearFormError());
     setModalOpen(true);
   };
@@ -129,6 +142,9 @@ export default function AdminDevelopersPage() {
     setDescription(dev.description || "");
     setReraRegistered(dev.reraRegistered || false);
     setPartnershipStatus(dev.partnershipStatus || "ACTIVE");
+    clearAssetPreviews();
+    setLogoPreview(getAssetUrl(dev.logoUrl) || null);
+    setBannerPreview(getAssetUrl(dev.bannerImageUrl) || null);
     dispatch(clearFormError());
     setModalOpen(true);
   };
@@ -160,18 +176,18 @@ export default function AdminDevelopersPage() {
     formData.append("reraRegistered", String(reraRegistered));
     formData.append("partnershipStatus", partnershipStatus);
 
-    const logoFile = logoInputRef.current?.files?.[0];
-    const bannerFile = bannerInputRef.current?.files?.[0];
+    const logoFile = logo;
+    const bannerFile = banner;
 
     if (logoFile) formData.append("logo", logoFile);
     if (bannerFile) formData.append("bannerImage", bannerFile);
-    console.log(Object.fromEntries(formData.entries()));
     try {
       if (editingDeveloper) {
         await dispatch(updateDeveloper({ id: editingDeveloper.id, formData })).unwrap();
       } else {
         await dispatch(createDeveloper(formData)).unwrap();
       }
+      clearAssetPreviews();
       setModalOpen(false);
       loadData(page);
     } catch (err) {
@@ -555,34 +571,60 @@ export default function AdminDevelopersPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-black uppercase text-slate-400">Company Logo</label>
-                    <div className="relative">
+                    <div className="relative space-y-2">
                       <input
                         type="file"
-                        // onChange={(e)=>setLogo(e.target.files?.[0] || null)}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          revokeBlobUrl(logoPreview?.startsWith("blob:") ? logoPreview : null);
+                          setLogo(file);
+                          setLogoPreview(file ? URL.createObjectURL(file) : null);
+                        }}
                         ref={logoInputRef}
                         accept="image/*"
                         className="hidden"
                         id="logo-upload"
                       />
                       <label htmlFor="logo-upload" className="flex items-center gap-2 border border-dashed border-slate-200 bg-slate-50 px-4 py-2.5 rounded-2xl text-xs font-bold text-slate-500 cursor-pointer hover:bg-slate-100 transition justify-center">
-                        <Upload size={14} /> Upload Logo
+                        <Upload size={14} /> {logo ? "Change Logo" : "Select Logo"}
                       </label>
+                      {logoPreview && (
+                        <div className="relative h-20 overflow-hidden rounded-xl border border-slate-100 bg-white">
+                          <img src={logoPreview} alt="Logo preview" className="h-full w-full object-contain p-2" />
+                          <p className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                            {logo ? "Pending · saves with form" : "Current"}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-xs font-black uppercase text-slate-400">Banner Image</label>
-                    <div className="relative">
+                    <div className="relative space-y-2">
                       <input
                         type="file"
-                        // onChange={(e)=>setBanner(e.target.files?.[0] || null)}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          revokeBlobUrl(bannerPreview?.startsWith("blob:") ? bannerPreview : null);
+                          setBanner(file);
+                          setBannerPreview(file ? URL.createObjectURL(file) : null);
+                        }}
                         ref={bannerInputRef}
                         accept="image/*"
                         className="hidden"
                         id="banner-upload"
                       />
                       <label htmlFor="banner-upload" className="flex items-center gap-2 border border-dashed border-slate-200 bg-slate-50 px-4 py-2.5 rounded-2xl text-xs font-bold text-slate-500 cursor-pointer hover:bg-slate-100 transition justify-center">
-                        <Upload size={14} /> Upload Banner
+                        <Upload size={14} /> {banner ? "Change Banner" : "Select Banner"}
                       </label>
+                      {bannerPreview && (
+                        <div className="relative h-20 overflow-hidden rounded-xl border border-slate-100 bg-white">
+                          <img src={bannerPreview} alt="Banner preview" className="h-full w-full object-cover" />
+                          <p className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                            {banner ? "Pending · saves with form" : "Current"}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

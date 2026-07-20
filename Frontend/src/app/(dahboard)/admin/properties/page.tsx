@@ -38,9 +38,16 @@ import {
   Images,
   FolderOpen,
   DollarSign,
-  Grid
+  Grid,
+  X,
 } from "lucide-react";
 import { cn, formatPrice } from "@/lib/utils";
+import {
+  clearPendingBlobFiles,
+  createPendingBlobFile,
+  type PendingBlobFile,
+  revokePendingBlobFiles,
+} from "@/lib/pending-blob-files";
 
 const LIMIT = 6;
 
@@ -107,6 +114,8 @@ export default function AdminPropertiesPage() {
   const mediaInputRef = useRef<HTMLInputElement>(null);
   const [mediaType, setMediaType] = useState("EXTERIOR");
   const [mediaCaption, setMediaCaption] = useState("");
+  const [pendingMediaFiles, setPendingMediaFiles] = useState<PendingBlobFile[]>([]);
+  const [pendingUnitMediaFiles, setPendingUnitMediaFiles] = useState<PendingBlobFile[]>([]);
 
   // Form State
   const [title, setTitle] = useState("");
@@ -369,11 +378,18 @@ export default function AdminPropertiesPage() {
 
   // Open Media Modal
   const openMediaModal = (prop: Property) => {
+    clearPendingBlobFiles(pendingMediaFiles, setPendingMediaFiles);
     setMediaProperty(prop);
     setMediaCaption("");
     setMediaType("EXTERIOR");
     dispatch(clearFormError());
     setMediaModalOpen(true);
+  };
+
+  const closeMediaModal = () => {
+    clearPendingBlobFiles(pendingMediaFiles, setPendingMediaFiles);
+    clearPendingBlobFiles(pendingUnitMediaFiles, setPendingUnitMediaFiles);
+    setMediaModalOpen(false);
   };
 
   // Form Submit (Create or Update Property)
@@ -535,14 +551,20 @@ export default function AdminPropertiesPage() {
   };
 
   // Upload unit floor plans/images
+  const handleSelectUnitMedia = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).filter((f) => f.type.startsWith("image/"));
+    if (!files.length) return;
+    setPendingUnitMediaFiles((prev) => [...prev, ...files.map(createPendingBlobFile)]);
+    if (unitMediaInputRef.current) unitMediaInputRef.current.value = "";
+  };
+
   const handleUploadUnitImages = async (unitId: string) => {
-    if (!editingProperty || !unitMediaInputRef.current?.files?.length) return;
+    if (!editingProperty || !pendingUnitMediaFiles.length) return;
     dispatch(clearFormError());
 
-    const files = unitMediaInputRef.current.files;
     const formData = new FormData();
-    for (let i = 0; i < files.length; i++) {
-      formData.append("images", files[i]);
+    for (const item of pendingUnitMediaFiles) {
+      formData.append("images", item.file);
     }
     if (unitMediaCaption) formData.append("caption", unitMediaCaption);
     formData.append("imageType", unitMediaType);
@@ -551,9 +573,7 @@ export default function AdminPropertiesPage() {
       await dispatch(
         uploadPropertyUnitImage({ propertyId: editingProperty.id, unitId, formData })
       ).unwrap();
-      
-      // Clear input
-      if (unitMediaInputRef.current) unitMediaInputRef.current.value = "";
+      clearPendingBlobFiles(pendingUnitMediaFiles, setPendingUnitMediaFiles);
       setUnitMediaCaption("");
     } catch (err) {
       // Handled in Redux slice formError
@@ -570,15 +590,21 @@ export default function AdminPropertiesPage() {
     }
   };
 
+  const handleSelectGalleryMedia = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).filter((f) => f.type.startsWith("image/"));
+    if (!files.length) return;
+    setPendingMediaFiles((prev) => [...prev, ...files.map(createPendingBlobFile)]);
+    if (mediaInputRef.current) mediaInputRef.current.value = "";
+  };
+
   // Upload Images submit
   const handleUploadImages = async () => {
-    if (!mediaProperty || !mediaInputRef.current?.files?.length) return;
+    if (!mediaProperty || !pendingMediaFiles.length) return;
     dispatch(clearFormError());
 
-    const files = mediaInputRef.current.files;
     const formData = new FormData();
-    for (let i = 0; i < files.length; i++) {
-      formData.append("images", files[i]);
+    for (const item of pendingMediaFiles) {
+      formData.append("images", item.file);
     }
     if (mediaCaption) formData.append("caption", mediaCaption);
     formData.append("imageType", mediaType);
@@ -595,8 +621,7 @@ export default function AdminPropertiesPage() {
         images: [...(mediaProperty.images || []), ...updatedImages]
       });
 
-      // Clear input
-      if (mediaInputRef.current) mediaInputRef.current.value = "";
+      clearPendingBlobFiles(pendingMediaFiles, setPendingMediaFiles);
       setMediaCaption("");
     } catch (err) {
       // Handled in Redux formError
@@ -1847,17 +1872,43 @@ export default function AdminPropertiesPage() {
                                             type="file"
                                             ref={unitMediaInputRef}
                                             accept="image/*"
+                                            multiple
+                                            onChange={handleSelectUnitMedia}
                                             className="w-full text-[10px] text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-slate-200 file:text-[10px] file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100 file:cursor-pointer"
                                           />
+                                          {pendingUnitMediaFiles.length > 0 && (
+                                            <div className="space-y-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-2">
+                                              <p className="text-[9px] font-black uppercase text-[#e34b32]">
+                                                Pending preview ({pendingUnitMediaFiles.length})
+                                              </p>
+                                              <div className="flex flex-wrap gap-1.5">
+                                                {pendingUnitMediaFiles.map((item) => (
+                                                  <div key={item.id} className="relative h-12 w-12 overflow-hidden rounded-lg bg-slate-200">
+                                                    <img src={item.previewUrl} alt="" className="h-full w-full object-cover" />
+                                                    <button
+                                                      type="button"
+                                                      onClick={() => {
+                                                        revokePendingBlobFiles([item]);
+                                                        setPendingUnitMediaFiles((prev) => prev.filter((p) => p.id !== item.id));
+                                                      }}
+                                                      className="absolute right-0 top-0 rounded-bl bg-black/60 p-0.5 text-white"
+                                                    >
+                                                      <X size={10} />
+                                                    </button>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
                                         </div>
 
                                         <button
                                           type="button"
                                           onClick={() => handleUploadUnitImages(unit.id)}
-                                          disabled={formSubmitting}
-                                          className="w-full py-2 bg-slate-900 text-white font-bold text-[10px] rounded-xl hover:bg-slate-800 transition"
+                                          disabled={formSubmitting || pendingUnitMediaFiles.length === 0}
+                                          className="w-full py-2 bg-slate-900 text-white font-bold text-[10px] rounded-xl hover:bg-slate-800 transition disabled:opacity-50"
                                         >
-                                          {formSubmitting ? "Uploading image..." : "Upload Floor Plan"}
+                                          {formSubmitting ? "Uploading image..." : "Save floor plan images"}
                                         </button>
                                       </div>
                                     </div>
@@ -1898,7 +1949,7 @@ export default function AdminPropertiesPage() {
       {/* Media Management Overlay Modal */}
       {mediaModalOpen && mediaProperty && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setMediaModalOpen(false)} />
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={closeMediaModal} />
           <div className="relative w-full max-w-2xl bg-white rounded-[2rem] border border-slate-100 p-6 md:p-8 shadow-2xl z-50 flex flex-col max-h-[85vh] overflow-hidden animate-reveal-up">
             
             <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4 shrink-0">
@@ -1907,7 +1958,7 @@ export default function AdminPropertiesPage() {
                 <p className="text-xs text-slate-400 mt-0.5">Upload images and tag them by category.</p>
               </div>
               <button
-                onClick={() => setMediaModalOpen(false)}
+                onClick={closeMediaModal}
                 className="text-slate-400 hover:text-slate-600 font-bold"
               >
                 Close
@@ -1983,17 +2034,49 @@ export default function AdminPropertiesPage() {
                     ref={mediaInputRef}
                     accept="image/*"
                     multiple
+                    onChange={handleSelectGalleryMedia}
                     className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border file:border-slate-200 file:text-xs file:font-semibold file:bg-slate-50 file:text-slate-700 hover:file:bg-slate-100 file:cursor-pointer"
                   />
+                  {pendingMediaFiles.length > 0 && (
+                    <div className="space-y-2 rounded-xl border border-dashed border-[#e34b32]/25 bg-[#fff7f3] p-3">
+                      <p className="text-[10px] font-black uppercase text-[#e34b32]">
+                        Pending preview ({pendingMediaFiles.length}) — uploads on save
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {pendingMediaFiles.map((item) => (
+                          <div key={item.id} className="relative h-16 w-16 overflow-hidden rounded-xl bg-slate-200">
+                            <img src={item.previewUrl} alt="" className="h-full w-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                revokePendingBlobFiles([item]);
+                                setPendingMediaFiles((prev) => prev.filter((p) => p.id !== item.id));
+                              }}
+                              className="absolute right-0.5 top-0.5 rounded-full bg-black/60 p-0.5 text-white"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => clearPendingBlobFiles(pendingMediaFiles, setPendingMediaFiles)}
+                        className="text-[10px] font-bold text-slate-500 hover:text-slate-800"
+                      >
+                        Discard pending
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <button
                   type="button"
                   onClick={handleUploadImages}
-                  disabled={formSubmitting}
+                  disabled={formSubmitting || pendingMediaFiles.length === 0}
                   className="w-full py-2.5 rounded-xl bg-[#e34b32] text-white font-bold text-xs hover:bg-[#d9462e] transition shadow-md disabled:opacity-60 flex items-center justify-center gap-1.5 cursor-pointer"
                 >
-                  <Upload size={14} /> {formSubmitting ? "Uploading file..." : "Upload & Save to Gallery"}
+                  <Upload size={14} /> {formSubmitting ? "Uploading file..." : "Save to Gallery"}
                 </button>
               </div>
             </div>

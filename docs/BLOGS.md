@@ -160,53 +160,34 @@ Empty check uses `isEmptyHtml()` so `<p></p>` is treated as empty.
 
 There are **two different image flows**. Do not confuse them.
 
-### A) Inline content image (inside the Typewriter)
+### A) Inline content image (inside the Typewriter) — upload on Save only
 
-This is what happens when admin clicks the **image** button in the toolbar:
+Images inserted in the editor are **not** written to disk until the admin clicks Save / Publish.
 
 ```
-1. Admin clicks Image → hidden <input type="file"> opens
-2. User selects an image file
-3. Frontend calls uploadBlogImage(file)
-      → POST /api/blogs/upload-image
-      → FormData field name: "image"
-      → Auth cookie required (ADMIN / SUPER_ADMIN)
-4. Multer (uploadBlogImage) writes file to Backend/uploads/
-5. Controller uploadBlogContentImage returns:
-      {
-        success: true,
-        data: {
-          filename: "image-….jpg",
-          url: "/uploads/image-….jpg"
-        }
-      }
-6. Frontend builds a full URL with getAssetUrl(filename)
-      → e.g. http://localhost:4000/uploads/image-….jpg
-7. TipTap inserts: <img src="http://localhost:4000/uploads/...">
-8. That HTML becomes part of form.content
-9. Later, when blog is saved, the <img> tag is stored inside blogs.content
+1. Admin clicks Image → picks a file
+2. Frontend creates a local blob: URL (URL.createObjectURL)
+3. TipTap inserts <img src="blob:http://…">  (preview only)
+4. File is kept in an in-memory Map (blobUrl → File)
+5. If admin closes the drawer without saving:
+      → blob URLs are revoked
+      → Map is cleared
+      → nothing is written to Backend/uploads/
+6. On Save / Publish:
+      a. persistContent() finds every blob: URL still in the HTML
+      b. Uploads each File via POST /api/blogs/upload-image
+      c. Replaces blob: URLs with permanent http://…/uploads/… URLs
+      d. Then createBlog / updateBlog stores the final HTML
 ```
 
-**Frontend helper** (`Frontend/src/lib/api.ts`):
+**Why:** abandoned drafts (insert image → cancel) leave **no** orphan files on the server.
 
-```ts
-export async function uploadBlogImage(file: File) {
-  const formData = new FormData();
-  formData.append("image", file);           // must match multer .single("image")
-  const response = await api.post("/blogs/upload-image", formData);
-  return response.data.data;                // { filename, url }
-}
-```
+**Editor API** (`TypewriterEditorHandle`):
 
-**Editor insert** (`typewriter-editor.tsx`):
-
-```ts
-const result = await uploadBlogImage(file);
-const src = getAssetUrl(result.filename) || result.url;
-editor.chain().focus().setImage({ src }).run();
-```
-
-**Important:** The image is uploaded **immediately** when inserted — not when the blog is saved. Saving the blog only stores the HTML that already contains the image URL.
+| Method | When |
+|--------|------|
+| `persistContent()` | Called on Save — uploads blobs, returns final HTML |
+| `discardPending()` | Called on Close — revoke blobs, no upload |
 
 ### B) Cover image (card / hero image)
 
@@ -349,9 +330,9 @@ Frontend offline fallback: `Frontend/src/lib/dummy-blogs.ts`.
 
 ## 12. Mental model (one sentence each)
 
-1. **Typewriter** edits HTML in the browser.
-2. **Inline images** are uploaded to `/api/blogs/upload-image` as soon as you insert them; the returned URL is embedded in that HTML.
-3. **Saving a blog** stores title/meta + full HTML `content` (+ optional cover file) in MySQL.
+1. **Typewriter** edits HTML in the browser (inline images use local `blob:` previews).
+2. **Inline images** are uploaded to `/api/blogs/upload-image` only when the admin saves/publishes; closing without save uploads nothing.
+3. **Saving a blog** uploads any pending images, rewrites HTML URLs, then stores title/meta + HTML `content` (+ optional cover file) in MySQL.
 4. **Public pages** only show `isPublished` blogs and render the stored HTML.
 5. **Cover image** is a separate file field on the blog row — not the same as inline body images.
 

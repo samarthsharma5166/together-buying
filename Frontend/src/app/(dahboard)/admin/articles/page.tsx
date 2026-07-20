@@ -33,6 +33,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { revokeBlobUrl } from "@/lib/pending-blob-files";
 
 const EMPTY_FORM = {
   title: "",
@@ -127,6 +128,7 @@ export default function AdminArticlesPage() {
   }, [success]);
 
   const closeDrawer = () => {
+    revokeBlobUrl(coverPreview);
     setDrawerOpen(false);
     setEditingId(null);
     setForm(EMPTY_FORM);
@@ -744,6 +746,9 @@ export default function AdminArticlesPage() {
                   >
                     {coverPreview ? "Change image" : "Select image"}
                   </button>
+                  <p className="mt-2 text-[11px] font-semibold text-slate-400">
+                    Cover is previewed locally and uploads only when you save.
+                  </p>
                 </div>
               </div>
 

@@ -10,6 +10,12 @@ import {
   uploadHeroSlides,
 } from "@/lib/api";
 import {
+  clearPendingBlobFiles,
+  createPendingBlobFile,
+  type PendingBlobFile,
+  revokePendingBlobFiles,
+} from "@/lib/pending-blob-files";
+import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
@@ -18,6 +24,7 @@ import {
   Save,
   Trash2,
   Upload,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +44,7 @@ export default function AdminHeroSlidesPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [uploadTags, setUploadTags] = useState(DEFAULT_TAG);
   const [draftTags, setDraftTags] = useState<Record<string, typeof DEFAULT_TAG>>({});
+  const [pendingFiles, setPendingFiles] = useState<PendingBlobFile[]>([]);
 
   const loadSlides = async () => {
     setLoading(true);
@@ -67,16 +75,42 @@ export default function AdminHeroSlidesPage() {
     loadSlides();
   }, []);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  useEffect(() => {
+    return () => revokePendingBlobFiles(pendingFiles);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSelectFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []).filter((f) => f.type.startsWith("image/"));
     if (!files.length) return;
+    setPendingFiles((prev) => [...prev, ...files.map(createPendingBlobFile)]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removePending = (id: string) => {
+    setPendingFiles((prev) => {
+      const target = prev.find((p) => p.id === id);
+      if (target) revokePendingBlobFiles([target]);
+      return prev.filter((p) => p.id !== id);
+    });
+  };
+
+  const clearPending = () => {
+    clearPendingBlobFiles(pendingFiles, setPendingFiles);
+  };
+
+  const handleSavePending = async () => {
+    if (!pendingFiles.length) return;
 
     setUploading(true);
     setError(null);
     try {
-      await uploadHeroSlides(files, uploadTags);
+      await uploadHeroSlides(
+        pendingFiles.map((p) => p.file),
+        uploadTags
+      );
+      clearPending();
       await loadSlides();
-      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || "Upload failed");
     } finally {
@@ -120,7 +154,7 @@ export default function AdminHeroSlidesPage() {
       await updateHeroSlide(slideId, tags);
       await loadSlides();
     } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || "Failed to save tags");
+      setError(err?.response?.data?.message || err?.message || "Save failed");
     } finally {
       setUpdatingId(null);
     }
@@ -128,6 +162,7 @@ export default function AdminHeroSlidesPage() {
 
   const handleDelete = async (id: string) => {
     setUpdatingId(id);
+    setError(null);
     try {
       await deleteHeroSlide(id);
       setDeleteConfirmId(null);
@@ -139,24 +174,21 @@ export default function AdminHeroSlidesPage() {
     }
   };
 
-  const updateDraft = (slideId: string, field: keyof typeof DEFAULT_TAG, value: string) => {
+  const updateDraft = (id: string, key: keyof typeof DEFAULT_TAG, value: string) => {
     setDraftTags((prev) => ({
       ...prev,
-      [slideId]: {
-        ...(prev[slideId] || DEFAULT_TAG),
-        [field]: value,
-      },
+      [id]: { ...(prev[id] || DEFAULT_TAG), [key]: value },
     }));
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs font-black uppercase tracking-widest text-[#e34b32]">Homepage</p>
-          <h1 className="font-display text-3xl font-black text-slate-800 mt-1">Hero Section Images</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Upload images with tag text. Each slide can have its own &quot;We&apos;ve saved&quot; badge on the homepage.
+          <h1 className="mt-1 font-display text-3xl font-black text-slate-800">Hero Slides</h1>
+          <p className="mt-1 max-w-xl text-sm text-slate-500">
+            Select images for a local preview first. They upload only when you click Save pending.
           </p>
         </div>
 
@@ -191,17 +223,62 @@ export default function AdminHeroSlidesPage() {
             accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,image/avif"
             multiple
             className="hidden"
-            onChange={handleUpload}
+            onChange={handleSelectFiles}
           />
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#e34b32] px-5 py-3 text-sm font-black text-white shadow-lg transition hover:bg-[#cf3f2a] disabled:opacity-60"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-black text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-60"
           >
-            {uploading ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} />}
-            {uploading ? "Uploading..." : "Add Images"}
+            <Upload size={18} />
+            Select Images
           </button>
+
+          {pendingFiles.length > 0 && (
+            <div className="space-y-3 rounded-2xl border border-[#e34b32]/20 bg-[#fff7f3] p-4">
+              <p className="text-xs font-black uppercase tracking-wider text-[#e34b32]">
+                Pending ({pendingFiles.length}) — not on server yet
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {pendingFiles.map((item) => (
+                  <div key={item.id} className="relative aspect-square overflow-hidden rounded-xl bg-slate-200">
+                    <div
+                      className="absolute inset-0 bg-cover bg-center"
+                      style={{ backgroundImage: `url(${item.previewUrl})` }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePending(item.id)}
+                      className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black"
+                      aria-label="Remove"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleSavePending}
+                  disabled={uploading}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#e34b32] px-3 py-2.5 text-xs font-black text-white hover:bg-[#cf3f2a] disabled:opacity-60"
+                >
+                  {uploading ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  {uploading ? "Uploading…" : "Save pending"}
+                </button>
+                <button
+                  type="button"
+                  onClick={clearPending}
+                  disabled={uploading}
+                  className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-black text-slate-600 hover:bg-slate-50 disabled:opacity-60"
+                >
+                  Discard
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -233,7 +310,7 @@ export default function AdminHeroSlidesPage() {
           <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-16 text-center">
             <ImageIcon className="mx-auto mb-4 text-slate-300" size={42} />
             <p className="font-display text-lg font-black text-slate-700">No hero images yet</p>
-            <p className="mt-2 text-sm text-slate-500">Upload images and set tag text for each slide.</p>
+            <p className="mt-2 text-sm text-slate-500">Select images, preview them, then save to upload.</p>
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">

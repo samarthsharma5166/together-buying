@@ -21,9 +21,9 @@ import {
   Trash2,
   Upload,
   Video,
-  Youtube,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { revokeBlobUrl } from "@/lib/pending-blob-files";
 
 type DraftFields = {
   title: string;
@@ -47,6 +47,7 @@ export default function AdminShowcaseVideosPage() {
   const [newVideo, setNewVideo] = useState<DraftFields>(EMPTY_DRAFT);
   const [newVideoFile, setNewVideoFile] = useState<File | null>(null);
   const [newPosterFile, setNewPosterFile] = useState<File | null>(null);
+  const [posterPreview, setPosterPreview] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, DraftFields>>({});
   const [channel, setChannel] = useState<YoutubeChannelConfig | null>(null);
   const [channelDraft, setChannelDraft] = useState({
@@ -94,6 +95,8 @@ export default function AdminShowcaseVideosPage() {
     setNewVideo(EMPTY_DRAFT);
     setNewVideoFile(null);
     setNewPosterFile(null);
+    revokeBlobUrl(posterPreview);
+    setPosterPreview(null);
     setNewYoutubeUrl("");
     if (videoInputRef.current) videoInputRef.current.value = "";
     if (posterInputRef.current) posterInputRef.current.value = "";
@@ -261,7 +264,7 @@ export default function AdminShowcaseVideosPage() {
       >
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff3ef] text-[#e34b32]">
-            <Youtube size={22} />
+            <Video size={22} />
           </div>
           <div>
             <h2 className="font-display text-xl font-black text-slate-800">YouTube Channel Settings</h2>
@@ -367,8 +370,24 @@ export default function AdminShowcaseVideosPage() {
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
               className="w-full text-sm"
-              onChange={(e) => setNewPosterFile(e.target.files?.[0] || null)}
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                revokeBlobUrl(posterPreview);
+                setNewPosterFile(file);
+                setPosterPreview(file ? URL.createObjectURL(file) : null);
+              }}
             />
+            {posterPreview && (
+              <div className="relative mt-3 h-36 overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                <img src={posterPreview} alt="Poster preview" className="h-full w-full object-cover" />
+                <p className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-1 text-[10px] font-bold text-white">
+                  Local preview · uploads on Add Video
+                </p>
+              </div>
+            )}
+            <p className="mt-1.5 text-[11px] font-semibold text-slate-400">
+              Poster stays local until you submit the form.
+            </p>
           </div>
         </div>
 
