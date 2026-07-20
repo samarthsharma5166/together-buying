@@ -45,7 +45,7 @@ const adminNavItems: SidebarItem[] = [
   { label: "Overview", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Hero Slides", href: "/admin/hero-slides", icon: ImageIcon },
   { label: "Showcase Videos", href: "/admin/showcase-videos", icon: Video },
-  { label: "Blogs", href: "/admin/blogs", icon: BookOpen },
+  { label: "Articles", href: "/admin/articles", icon: BookOpen },
   { label: "Properties", href: "/admin/properties", icon: Building2 },
   { label: "Developers", href: "/admin/developers", icon: Briefcase },
   { label: "Groups & RMs", href: "/admin/groups", icon: Users },

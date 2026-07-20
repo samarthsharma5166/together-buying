@@ -13,7 +13,7 @@ import transectionRouter from './routes/transection.routes.js'
 import heroSlideRouter from './routes/heroSlide.routes.js'
 import showcaseVideoRouter from './routes/showcaseVideo.routes.js'
 import youtubeChannelRouter from './routes/youtubeChannel.routes.js'
-import blogRouter from './routes/blog.routes.js'
+import articleRouter from './routes/article.routes.js'
 import leadRouter from './routes/lead.routes.js'
 
 // middleware import
@@ -72,7 +72,7 @@ app.use("/api/transections", transectionRouter)
 app.use("/api/hero-slides", heroSlideRouter)
 app.use("/api/showcase-videos", showcaseVideoRouter)
 app.use("/api/youtube-channel", youtubeChannelRouter)
-app.use("/api/blogs", blogRouter)
+app.use("/api/articles", articleRouter)
 app.use("/api/leads", leadRouter)
 
 

@@ -1,4 +1,8 @@
 import { api } from "@/lib/axios";
+import {
+  buildListingPaginationMeta,
+  getListingPageParams,
+} from "@/lib/articles-pagination";
 import { citiesMatch } from "@/lib/locations";
 import {
   fallbackDevelopers as mockDevelopers,
@@ -872,7 +876,7 @@ export async function deleteShowcaseVideo(id: string): Promise<boolean> {
   return response.data?.success || false;
 }
 
-export type BlogAuthor = {
+export type ArticleAuthor = {
   id: string;
   firstName: string;
   lastName: string;
@@ -880,7 +884,7 @@ export type BlogAuthor = {
   role?: string;
 };
 
-export type Blog = {
+export type Article = {
   id: string;
   title: string;
   slug: string;
@@ -892,32 +896,165 @@ export type Blog = {
   isPublished?: boolean;
   createdAt: string;
   updatedAt?: string;
-  author?: BlogAuthor;
+  author?: ArticleAuthor;
+  _count?: { comments?: number };
 };
 
-function mapBlogCover(blog: Blog): Blog {
+export type ArticleComment = {
+  id: string;
+  content: string;
+  guestName?: string | null;
+  articleId: string;
+  authorId?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  author?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    avatarUrl?: string | null;
+  } | null;
+};
+
+export type PaginationMeta = {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  publishedCount?: number;
+  draftCount?: number;
+};
+
+function mapArticleCover(article: Article): Article {
   return {
-    ...blog,
-    coverImageUrl: blog.coverImageUrl ? getAssetUrl(blog.coverImageUrl) || blog.coverImageUrl : null,
+    ...article,
+    coverImageUrl: article.coverImageUrl ? getAssetUrl(article.coverImageUrl) || article.coverImageUrl : null,
   };
 }
 
-export async function getBlogs(): Promise<Blog[]> {
-  const payload = await safeFetch<ApiItem<Blog[]>>("/blogs");
-  return (payload?.data || []).map(mapBlogCover);
+export async function getArticles(params?: {
+  page?: number;
+  limit?: number;
+  skip?: number;
+  search?: string;
+  category?: string;
+}): Promise<{ articles: Article[]; meta: PaginationMeta }> {
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 9;
+  const searchParams = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  if (params?.skip !== undefined) searchParams.set("skip", String(params.skip));
+  if (params?.search?.trim()) searchParams.set("search", params.search.trim());
+  if (params?.category?.trim()) searchParams.set("category", params.category.trim());
+  const payload = await safeFetch<ApiList<Article>>(`/articles?${searchParams}`);
+  const articles = (payload?.data || []).map(mapArticleCover);
+  const meta: PaginationMeta = {
+    total: payload?.meta?.total ?? articles.length,
+    page: payload?.meta?.page ?? page,
+    limit: payload?.meta?.limit ?? limit,
+    totalPages: payload?.meta?.totalPages ?? Math.max(1, Math.ceil(articles.length / limit)),
+  };
+  return { articles, meta };
 }
 
-export async function getBlogBySlug(slug: string): Promise<Blog | null> {
-  const payload = await safeFetch<ApiItem<Blog>>(`/blogs/${slug}`);
-  return payload?.data ? mapBlogCover(payload.data) : null;
+export async function getArticlesListing(params?: {
+  page?: number;
+  search?: string;
+  category?: string;
+}): Promise<{ articles: Article[]; meta: PaginationMeta }> {
+  const page = params?.page ?? 1;
+  const { limit, skip } = getListingPageParams(page);
+  const result = await getArticles({
+    page,
+    limit,
+    skip,
+    search: params?.search,
+    category: params?.category,
+  });
+  return {
+    articles: result.articles,
+    meta: buildListingPaginationMeta(result.meta.total, page),
+  };
 }
 
-export async function getBlogsAdmin(): Promise<Blog[]> {
-  const response = await api.get("/blogs/admin");
-  return response.data?.data || [];
+export async function getArticleBySlug(slug: string): Promise<Article | null> {
+  const payload = await safeFetch<ApiItem<Article>>(`/articles/${slug}`);
+  return payload?.data ? mapArticleCover(payload.data) : null;
 }
 
-export async function createBlog(data: {
+export async function getSimilarArticles(slug: string, limit = 3): Promise<Article[]> {
+  const payload = await safeFetch<ApiItem<Article[]>>(`/articles/${slug}/similar?limit=${limit}`);
+  return (payload?.data || []).map(mapArticleCover);
+}
+
+export async function getArticleComments(
+  slug: string,
+  params?: { page?: number; limit?: number }
+): Promise<{ comments: ArticleComment[]; meta: PaginationMeta }> {
+  const search = new URLSearchParams();
+  if (params?.page) search.set("page", String(params.page));
+  if (params?.limit) search.set("limit", String(params.limit));
+  const payload = await safeFetch<ApiList<ArticleComment>>(
+    `/articles/${slug}/comments${search.size ? `?${search}` : ""}`
+  );
+  const comments = payload?.data || [];
+  return {
+    comments,
+    meta: {
+      total: payload?.meta?.total ?? comments.length,
+      page: payload?.meta?.page ?? 1,
+      limit: payload?.meta?.limit ?? 20,
+      totalPages: payload?.meta?.totalPages ?? 1,
+    },
+  };
+}
+
+export async function createArticleComment(
+  slug: string,
+  data: { content: string; guestName?: string }
+): Promise<ArticleComment> {
+  const response = await api.post(`/articles/${slug}/comments`, data);
+  if (!response.data?.success) throw new Error(response.data?.message || "Failed to post comment");
+  return response.data.data;
+}
+
+export async function deleteArticleComment(id: string): Promise<boolean> {
+  const response = await api.delete(`/articles/comments/${id}`);
+  return response.data?.success || false;
+}
+
+export async function getArticlesAdmin(params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  category?: string;
+}): Promise<{ articles: Article[]; meta: PaginationMeta }> {
+  const page = params?.page ?? 1;
+  const limit = params?.limit ?? 10;
+  const search = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  if (params?.search) search.set("search", params.search);
+  if (params?.status) search.set("status", params.status);
+  if (params?.category) search.set("category", params.category);
+  const response = await api.get(`/articles/admin?${search}`);
+  const articles: Article[] = response.data?.data || [];
+  const meta: PaginationMeta = {
+    total: response.data?.meta?.total ?? articles.length,
+    page: response.data?.meta?.page ?? page,
+    limit: response.data?.meta?.limit ?? limit,
+    totalPages: response.data?.meta?.totalPages ?? Math.max(1, Math.ceil(articles.length / limit)),
+    publishedCount: response.data?.meta?.publishedCount ?? 0,
+    draftCount: response.data?.meta?.draftCount ?? 0,
+  };
+  return { articles, meta };
+}
+
+export async function createArticle(data: {
   title: string;
   excerpt?: string;
   content: string;
@@ -925,7 +1062,7 @@ export async function createBlog(data: {
   readTimeMin?: number;
   isPublished?: boolean;
   coverImage?: File;
-}): Promise<Blog> {
+}): Promise<Article> {
   const formData = new FormData();
   formData.append("title", data.title);
   formData.append("content", data.content);
@@ -934,12 +1071,12 @@ export async function createBlog(data: {
   if (data.readTimeMin !== undefined) formData.append("readTimeMin", String(data.readTimeMin));
   if (data.isPublished !== undefined) formData.append("isPublished", String(data.isPublished));
   if (data.coverImage) formData.append("coverImage", data.coverImage);
-  const response = await api.post("/blogs", formData);
+  const response = await api.post("/articles", formData);
   if (!response.data?.success) throw new Error(response.data?.message || "Create failed");
   return response.data.data;
 }
 
-export async function updateBlog(
+export async function updateArticle(
   id: string,
   data: {
     title?: string;
@@ -950,7 +1087,7 @@ export async function updateBlog(
     isPublished?: boolean;
     coverImage?: File;
   }
-): Promise<Blog> {
+): Promise<Article> {
   const formData = new FormData();
   if (data.title !== undefined) formData.append("title", data.title);
   if (data.excerpt !== undefined) formData.append("excerpt", data.excerpt);
@@ -959,13 +1096,13 @@ export async function updateBlog(
   if (data.readTimeMin !== undefined) formData.append("readTimeMin", String(data.readTimeMin));
   if (data.isPublished !== undefined) formData.append("isPublished", String(data.isPublished));
   if (data.coverImage) formData.append("coverImage", data.coverImage);
-  const response = await api.patch(`/blogs/${id}`, formData);
+  const response = await api.patch(`/articles/${id}`, formData);
   if (!response.data?.success) throw new Error(response.data?.message || "Update failed");
   return response.data.data;
 }
 
-export async function deleteBlog(id: string): Promise<boolean> {
-  const response = await api.delete(`/blogs/${id}`);
+export async function deleteArticle(id: string): Promise<boolean> {
+  const response = await api.delete(`/articles/${id}`);
   return response.data?.success || false;
 }
 

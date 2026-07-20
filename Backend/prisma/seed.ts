@@ -67,6 +67,7 @@ const YOUTUBE_VIDEOS = [
 ];
 
 async function main() {
+  await prisma.article.deleteMany();
   await prisma.showcaseVideo.deleteMany();
   await prisma.youtubeChannelConfig.deleteMany();
   await prisma.propertyImage.deleteMany();
@@ -227,11 +228,24 @@ async function main() {
     await prisma.showcaseVideo.create({ data: video });
   }
 
+  const { ARTICLE_SEEDS } = await import("./seed-articles.ts");
+
+  for (const article of ARTICLE_SEEDS) {
+    await prisma.article.create({
+      data: {
+        ...article,
+        isPublished: true,
+        authorId: admin.id,
+      },
+    });
+  }
+
   console.log("Seeded successfully:");
   console.log("  - 1 admin user (admin@groupbuying.in / Admin@1234)");
   console.log("  - 30 developers");
   console.log("  - 30 properties (4 offshore, 8 pre-launch, 8 promising plots/villas)");
   console.log("  - 4 YouTube showcase videos");
+  console.log(`  - ${ARTICLE_SEEDS.length} published articles`);
   console.log("  - YouTube channel config");
 }
 

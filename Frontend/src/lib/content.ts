@@ -7,7 +7,7 @@ export const navItems = [
 ];
 
 export const resourceNavItems = [
-  { label: "Articles", href: "/blogs" },
+  { label: "Articles", href: "/articles" },
   { label: "How It Works", href: "/how-it-works" },
   { label: "About Us", href: "/about" },
   { label: "FAQs", href: "/faqs" },

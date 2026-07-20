@@ -5,6 +5,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
+  async redirects() {
+    return [
+      { source: "/blogs", destination: "/articles", permanent: true },
+      { source: "/blogs/:slug", destination: "/articles/:slug", permanent: true },
+      { source: "/admin/blogs", destination: "/admin/articles", permanent: true },
+    ];
+  },
   images: {
     unoptimized: true,
     remotePatterns: [

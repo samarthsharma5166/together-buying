@@ -105,7 +105,8 @@ model User {
   groupMembership   GroupMembers?
   subscriptions     subscription[]
   transactions      transections[]
-  blogs             Blog[]
+  articles          Article[]
+  articleComments   ArticleComment[]
   leads             leads[]
   leadNotes         LeadNote[]
   @@map("users")
@@ -446,22 +447,38 @@ model YoutubeChannelConfig {
   @@map("youtube_channel_config")
 }
 
-model Blog {
-  id            String   @id @default(uuid())
+model Article {
+  id            String           @id @default(uuid())
   title         String
-  slug          String   @unique
-  excerpt       String?  @db.Text
-  content       String   @db.LongText
-  coverImageUrl String?  @map("cover_image_url")
-  category      String   @default("General")
-  readTimeMin   Int      @default(5) @map("read_time_min")
-  isPublished   Boolean  @default(false) @map("is_published")
-  authorId      String   @map("author_id")
-  author        User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  slug          String           @unique
+  excerpt       String?          @db.Text
+  content       String           @db.LongText
+  coverImageUrl String?          @map("cover_image_url")
+  category      String           @default("General")
+  readTimeMin   Int              @default(5) @map("read_time_min")
+  isPublished   Boolean          @default(false) @map("is_published")
+  authorId      String           @map("author_id")
+  author        User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments      ArticleComment[]
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
 
-  @@map("blogs")
+  @@map("articles")
+}
+
+model ArticleComment {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  guestName String?  @map("guest_name")
+  articleId String   @map("article_id")
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  authorId  String?  @map("author_id")
+  author    User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([articleId])
+  @@map("article_comments")
 }
 
 enum leadStatus {

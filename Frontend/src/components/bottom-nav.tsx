@@ -6,7 +6,7 @@ import { Heart, Home, LogIn, Newspaper, Search } from "lucide-react";
 const items = [
   { label: "Home", href: "/", icon: Home },
   { label: "Properties", href: "/properties", icon: Search },
-  { label: "Blogs", href: "/blogs", icon: Newspaper },
+  { label: "Articles", href: "/articles", icon: Newspaper },
   { label: "Login", href: "/login", icon: LogIn },
 ];
 
